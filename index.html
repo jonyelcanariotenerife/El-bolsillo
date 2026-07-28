@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Quantum Finance · Bolsillo</title>
+
+    <!-- PWA: manifest + iconos + colores de tema -->
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#020205" />
+    <link rel="icon" href="./icon-192.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bolsillo" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- React + ReactDOM + Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800;900&display=swap" rel="stylesheet" />
+
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020205; color: #e2e8f0; min-height: 100vh; padding-bottom: 40px; transition: background-color 0.3s, color 0.3s; }
+        /* Modo claro — paleta pastel cálida, nada de blanco puro ni colores saturados */
+        body.light-mode { background-color: #f4efe6; color: #2b2620; }
+        body.light-mode .bg-white\/5 { background-color: #efe8da; }
+        body.light-mode .border-white\/10 { border-color: rgba(43,38,32,0.1); }
+        body.light-mode .border-white\/5 { border-color: rgba(43,38,32,0.07); }
+        body.light-mode .bg-black\/30 { background-color: rgba(43,38,32,0.05); }
+        body.light-mode .bg-black\/40 { background-color: rgba(43,38,32,0.07); }
+        body.light-mode .bg-black\/50 { background-color: rgba(43,38,32,0.08); }
+        body.light-mode .text-slate-400 { color: #79725f; }
+        body.light-mode .text-slate-300 { color: #4a4436; }
+        body.light-mode .text-white { color: #2b2620; }
+        body.light-mode .bg-gradient-to-br { background: linear-gradient(135deg, #ece3f6 0%, #f1ebe0 100%); }
+        body.light-mode .border-indigo-500\/20 { border-color: rgba(124,110,201,0.25); }
+        body.light-mode .border-indigo-500\/30 { border-color: rgba(124,110,201,0.35); }
+        body.light-mode .border-indigo-500\/40 { border-color: rgba(124,110,201,0.4); }
+        body.light-mode .border-indigo-500\/50 { border-color: rgba(124,110,201,0.5); }
+
+        /* Acentos pastelizados: mismas familias de color, ajustadas para contraste sobre fondo claro */
+        body.light-mode .text-indigo-400, body.light-mode .text-indigo-300 { color: #6a5bc2; }
+        body.light-mode .text-rose-400 { color: #b8496a; }
+        body.light-mode .text-emerald-400, body.light-mode .text-emerald-300 { color: #3f9e78; }
+        body.light-mode .text-amber-400 { color: #b3823a; }
+
+        body.light-mode .bg-indigo-600 { background-color: #7c6ec9; }
+        body.light-mode .bg-indigo-600:hover { background-color: #6a5bc2; }
+        body.light-mode .bg-indigo-500 { background-color: #8b7fd1; }
+        body.light-mode .bg-emerald-600 { background-color: #4fac86; }
+        body.light-mode .bg-emerald-500 { background-color: #5cb891; }
+        body.light-mode .bg-rose-500 { background-color: #cf6b8a; }
+        body.light-mode .bg-amber-500 { background-color: #cf9e52; }
+        body.light-mode .bg-slate-700, body.light-mode .bg-slate-800, body.light-mode .bg-slate-900 { background-color: #e4dccb; color: #2b2620; }
+
+        body.light-mode .bg-indigo-500\/10 { background-color: rgba(124,110,201,0.1); }
+        body.light-mode .bg-indigo-500\/20 { background-color: rgba(124,110,201,0.16); }
+        body.light-mode .bg-indigo-500\/30 { background-color: rgba(124,110,201,0.2); }
+        body.light-mode .bg-indigo-900\/30 { background-color: rgba(124,110,201,0.1); }
+        body.light-mode .bg-rose-500\/10 { background-color: rgba(199,107,138,0.1); }
+        body.light-mode .bg-rose-500\/20 { background-color: rgba(199,107,138,0.16); }
+        body.light-mode .bg-rose-500\/30 { background-color: rgba(199,107,138,0.22); }
+        body.light-mode .bg-emerald-500\/20 { background-color: rgba(79,172,134,0.16); }
+        body.light-mode .bg-amber-500\/20 { background-color: rgba(179,130,58,0.16); }
+
+        /* Modales: en modo claro deben ser claros también, no una caja negra flotando */
+        body.light-mode .bg-\[\#0f111a\] { background-color: #fbf8f2; border-color: rgba(43,38,32,0.1) !important; }
+        body.light-mode .bg-black\/80 { background-color: rgba(43,38,32,0.35); }
+
+        body.light-mode .toast { background: #fbf8f2; border-color: rgba(43,38,32,0.1); color: #2b2620; }
+        body.light-mode .theme-toggle { background: rgba(43,38,32,0.05); border-color: rgba(43,38,32,0.1); color: #2b2620; }
+        body.light-mode .btn-add { background: #ded5f2; color: #4a3f8f; border-color: rgba(43,38,32,0.08); }
+        body.light-mode input, body.light-mode select { background-color: rgba(43,38,32,0.03) !important; color: #2b2620 !important; }
+        body.light-mode input::placeholder { color: #9b927c; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px) scale(0.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+        .animate-fade { animation: fadeIn 0.2s ease-out forwards; }
+        .animate-pulse-soft { animation: pulse 1.5s ease-in-out infinite; }
+        .expense-enter { animation: slideIn 0.25s ease-out forwards; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .week-grid { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 0.9fr 0.9fr 1fr; gap: 0.2rem 0.3rem; align-items: center; font-size: 0.7rem; }
+        .week-grid .col-header { font-size: 0.6rem; text-transform: uppercase; font-weight: 800; color: #64748b; letter-spacing: 0.03em; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f111a; border: 1px solid rgba(255,255,255,0.1); padding: 12px 24px; border-radius: 16px; font-weight: 700; font-size: 0.8rem; z-index: 100; animation: fadeIn 0.3s ease-out; backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .mic-btn { transition: all 0.3s ease; }
+        .mic-btn.active { background: rgba(239, 68, 68, 0.3); border-color: rgba(239, 68, 68, 0.5); animation: pulse 1s ease-in-out infinite; }
+        .mic-btn:hover { transform: scale(1.05); }
+        .total-hoy { transition: all 0.3s ease; }
+        .btn-add { transition: all 0.2s ease; background: white; color: black; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-add:active { transform: scale(0.95); }
+        .presupuesto-real { font-size: 2.35rem; font-weight: 900; line-height: 1.15; letter-spacing: -0.01em; }
+        .presupuesto-real small { font-size: 0.6rem; font-weight: 700; color: #94a3b8; }
+        .banco-edit { cursor: pointer; transition: all 0.2s; }
+        .banco-edit:hover { color: #818cf8; text-decoration: underline; }
+        .theme-toggle { cursor: pointer; transition: all 0.2s; font-size: 0.9rem; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+        .theme-toggle:hover { background: rgba(255,255,255,0.1); }
+        /* Centrado real en móvil: 100dvh se adapta a la barra de direcciones visible, a diferencia de inset-0/100vh */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; height: 100dvh; }
+    </style>
+</head>
+<body>
+    <div id="root" class="max-w-md mx-auto"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        const STORAGE_KEY = 'quantum_pocket_mobile_data';
+        const VOICE_GUIDE_SHOWN_KEY = 'quantum_voice_guide_shown';
+        const THEME_KEY = 'quantum_pocket_theme';
+        const LAST_ACTIVITY_KEY = 'quantum_pocket_last_activity';
+
+        const DEFAULT_DATA = {
+            presupuestoMioMensual: 439.12,
+            budgetReset: null,
+            expenses: [],
+            lastWeekRecalc: null,
+            banco: 'ING',
+            cardOrder: ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'],
+            categoryOrder: ['Ocio', 'Alimentación', 'Transporte', 'Casa', 'Otros']
+        };
+
+        const CARD_IDS = ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'];
+
+        const CATEGORIAS_GASTO = ['Ocio', 'Alimentación', 'Transporte', 'Casa', 'Otros'];
+        const COLORES_CATEGORIA = {
+            'Ocio': '#818cf8',
+            'Alimentación': '#34d399',
+            'Transporte': '#fbbf24',
+            'Casa': '#f43f5e',
+            'Otros': '#94a3b8'
+        };
+
+        // Repara un array de orden guardado: conserva lo válido, añade lo que falte, descarta lo desconocido
+        const sanitizeOrder = (saved, canonical) => {
+            if (!Array.isArray(saved)) return [...canonical];
+            const valid = saved.filter(id => canonical.includes(id));
+            const missing = canonical.filter(id => !valid.includes(id));
+            return [...valid, ...missing];
+        };
+
+        const loadData = () => {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (!parsed.lastWeekRecalc) parsed.lastWeekRecalc = null;
+                    if (!parsed.banco) parsed.banco = 'ING';
+                    parsed.cardOrder = sanitizeOrder(parsed.cardOrder, CARD_IDS);
+                    parsed.categoryOrder = sanitizeOrder(parsed.categoryOrder, CATEGORIAS_GASTO);
+                    return parsed;
+                }
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        };
+
+        const saveData = (dataToSave) => {
+            try { 
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave)); 
+            } catch (e) {}
+        };
+
+        const getWeekNumber = (date) => {
+            const d = new Date(date);
+            d.setHours(0,0,0,0);
+            d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+            const week1 = new Date(d.getFullYear(), 0, 4);
+            return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        };
+
+        const getFinancialCycleWeeks = (startDateStr) => {
+            const start = startDateStr ? new Date(startDateStr) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+            start.setHours(0,0,0,0);
+            
+            const end = new Date(start);
+            end.setDate(end.getDate() + 29);
+            end.setHours(23,59,59,999);
+
+            const getWeekName = (date) => {
+                const d = new Date(date);
+                d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+                const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+                return `Sem. ${Math.ceil(d.getDate() / 7)} (${monthNames[d.getMonth()]})`;
+            };
+
+            const weeks = [];
+            let current = new Date(start);
+
+            while (current <= end) {
+                const sunday = new Date(current);
+                const day = sunday.getDay();
+                const diff = day === 0 ? 0 : 7 - day;
+                sunday.setDate(sunday.getDate() + diff);
+                sunday.setHours(23,59,59,999);
+
+                const chunkEnd = sunday > end ? new Date(end) : new Date(sunday);
+                const d1 = new Date(current).setHours(0,0,0,0);
+                const d2 = new Date(chunkEnd).setHours(0,0,0,0);
+                const daysCount = Math.round((d2 - d1) / 86400000) + 1;
+
+                weeks.push({
+                    name: getWeekName(current),
+                    startChunk: new Date(current),
+                    endChunk: new Date(chunkEnd),
+                    days: daysCount
+                });
+
+                current = new Date(chunkEnd);
+                current.setDate(current.getDate() + 1);
+                current.setHours(0,0,0,0);
+            }
+            return weeks;
+        };
+
+        const formatFechaAmigable = (fechaStr) => {
+            const hoy = new Date();
+            const ayer = new Date(hoy);
+            ayer.setDate(ayer.getDate() - 1);
+            
+            const fecha = new Date(fechaStr);
+            fecha.setHours(0,0,0,0);
+            hoy.setHours(0,0,0,0);
+            ayer.setHours(0,0,0,0);
+
+            if (fecha.getTime() === hoy.getTime()) return 'Hoy';
+            if (fecha.getTime() === ayer.getTime()) return 'Ayer';
+            
+            const diffDias = Math.floor((hoy.getTime() - fecha.getTime()) / 86400000);
+            if (diffDias < 7) {
+                const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                return diasSemana[fecha.getDay()];
+            }
+            
+            return `${fecha.getDate()} ${fecha.toLocaleString('es', { month: 'short' })}`;
+        };
+
+        const App = () => {
+            const [data, setData] = useState(() => loadData());
+            const [modalOpen, setModalOpen] = useState(false);
+            const [editingId, setEditingId] = useState(null);
+            const [formData, setFormData] = useState({ 
+                name: '', 
+                amount: '', 
+                category: 'Ocio', 
+                tipoGasto: 'Individual', 
+                fecha: new Date().toISOString().slice(0,10) 
+            });
+            const [hasChanges, setHasChanges] = useState(false);
+
+            const [isEditingBase, setIsEditingBase] = useState(false);
+            const [tempBase, setTempBase] = useState(data.presupuestoMioMensual);
+            const [toast, setToast] = useState(null);
+            const [selectedCategoryModal, setSelectedCategoryModal] = useState(null);
+            
+            const [isListening, setIsListening] = useState(false);
+            const [voiceGuideShown, setVoiceGuideShown] = useState(() => {
+                return localStorage.getItem(VOICE_GUIDE_SHOWN_KEY) === 'true';
+            });
+            const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+            // TEMA
+            const [theme, setTheme] = useState(() => {
+                const saved = localStorage.getItem(THEME_KEY);
+                return saved || 'dark';
+            });
+
+            // Aplicar tema al body
+            useEffect(() => {
+                if (theme === 'light') {
+                    document.body.classList.add('light-mode');
+                } else {
+                    document.body.classList.remove('light-mode');
+                }
+                localStorage.setItem(THEME_KEY, theme);
+            }, [theme]);
+
+            // NOTIFICACIÓN DE RECORDATORIO (al abrir la app)
+            useEffect(() => {
+                const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+                if (lastActivity) {
+                    const diff = Date.now() - new Date(lastActivity).getTime();
+                    const hours = diff / (1000 * 60 * 60);
+                    if (hours > 24 && data.expenses.length > 0) {
+                        setToast('🔔 ¿Has hecho algún gasto hoy? ¡Apúntalo!');
+                    }
+                }
+                // Actualizar última actividad
+                localStorage.setItem(LAST_ACTIVITY_KEY, new Date().toISOString());
+            }, []);
+
+            // Actualizar última actividad al añadir/editar/eliminar gasto
+            const updateLastActivity = () => {
+                localStorage.setItem(LAST_ACTIVITY_KEY, new Date().toISOString());
+            };
+
+            const recognitionRef = useRef(null);
+            const inputRef = useRef(null);
+            const importInputRef = useRef(null);
+            const hasHydrated = useRef(false);
+            const [lastSyncAt, setLastSyncAt] = useState(null);
+
+            // ---------- REORDENAR (mantener pulsado y arrastrar) ----------
+            const cardRefs = useRef({});
+            const categoryRefs = useRef({});
+            const [draggingCard, setDraggingCard] = useState(null);
+            const [liveCardOrder, setLiveCardOrder] = useState(data.cardOrder);
+            const [draggingCategory, setDraggingCategory] = useState(null);
+            const [liveCategoryOrder, setLiveCategoryOrder] = useState(data.categoryOrder);
+            const dragInfoRef = useRef(null);
+
+            const LONG_PRESS_MS = 400;
+            const MOVE_CANCEL_PX = 8;
+
+            // Fábrica de manejadores de arrastre: crea el set de handlers para una lista reordenable
+            // (se usa una vez para las tarjetas y otra para las categorías del donut)
+            const makeReorderHandlers = ({ refsMap, liveOrder, setLiveOrder, setDragging, dataKey }) => {
+                const onPointerDown = (id, e) => {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    const startX = e.clientX, startY = e.clientY;
+                    let cancelled = false;
+
+                    const clearWatchers = () => {
+                        window.removeEventListener('pointermove', onEarlyMove);
+                        window.removeEventListener('pointerup', onEarlyUp);
+                    };
+                    const onEarlyMove = (ev) => {
+                        if (Math.abs(ev.clientX - startX) > MOVE_CANCEL_PX || Math.abs(ev.clientY - startY) > MOVE_CANCEL_PX) {
+                            cancelled = true;
+                            clearTimeout(timer);
+                            clearWatchers();
+                        }
+                    };
+                    const onEarlyUp = () => {
+                        cancelled = true;
+                        clearTimeout(timer);
+                        clearWatchers();
+                    };
+                    window.addEventListener('pointermove', onEarlyMove);
+                    window.addEventListener('pointerup', onEarlyUp, { once: true });
+
+                    const timer = setTimeout(() => {
+                        if (cancelled) return;
+                        clearWatchers();
+                        if (navigator.vibrate) navigator.vibrate(15);
+                        setDragging(id);
+                        dragInfoRef.current = { id, refsMap, liveOrder: [...liveOrder], setLiveOrder, setDragging, dataKey };
+                    }, LONG_PRESS_MS);
+                };
+                return { onPointerDown };
+            };
+
+            const cardDrag = makeReorderHandlers({
+                refsMap: cardRefs, liveOrder: liveCardOrder, setLiveOrder: setLiveCardOrder,
+                setDragging: setDraggingCard, dataKey: 'cardOrder'
+            });
+            const categoryDrag = makeReorderHandlers({
+                refsMap: categoryRefs, liveOrder: liveCategoryOrder, setLiveOrder: setLiveCategoryOrder,
+                setDragging: setDraggingCategory, dataKey: 'categoryOrder'
+            });
+
+            // Movimiento y suelta globales mientras hay un elemento "activo" en modo arrastre
+            useEffect(() => {
+                const info = dragInfoRef.current;
+                if (!info) return;
+
+                const onMove = (e) => {
+                    const { id, refsMap, setLiveOrder } = dragInfoRef.current;
+                    const y = e.clientY;
+                    setLiveOrder(prevOrder => {
+                        const order = [...prevOrder];
+                        const draggedIdx = order.indexOf(id);
+                        if (draggedIdx === -1) return prevOrder;
+                        for (let i = 0; i < order.length; i++) {
+                            if (order[i] === id) continue;
+                            const node = refsMap.current[order[i]];
+                            if (!node) continue;
+                            const rect = node.getBoundingClientRect();
+                            const mid = rect.top + rect.height / 2;
+                            const targetIdx = order.indexOf(order[i]);
+                            if ((draggedIdx < targetIdx && y > mid) || (draggedIdx > targetIdx && y < mid)) {
+                                const [moved] = order.splice(draggedIdx, 1);
+                                order.splice(targetIdx, 0, moved);
+                                return order;
+                            }
+                        }
+                        return prevOrder;
+                    });
+                };
+
+                const onUp = () => {
+                    const { setLiveOrder, setDragging, dataKey } = dragInfoRef.current;
+                    setLiveOrder(finalOrder => {
+                        setData(prev => ({ ...prev, [dataKey]: finalOrder }));
+                        return finalOrder;
+                    });
+                    setDragging(null);
+                    dragInfoRef.current = null;
+                };
+
+                window.addEventListener('pointermove', onMove);
+                window.addEventListener('pointerup', onUp, { once: true });
+                return () => {
+                    window.removeEventListener('pointermove', onMove);
+                    window.removeEventListener('pointerup', onUp);
+                };
+            }, [draggingCard, draggingCategory]);
+
+            // ---------- DETECCIÓN DE CONEXIÓN ----------
+            useEffect(() => {
+                const handleOnline = () => setIsOnline(true);
+                const handleOffline = () => setIsOnline(false);
+                window.addEventListener('online', handleOnline);
+                window.addEventListener('offline', handleOffline);
+                return () => {
+                    window.removeEventListener('online', handleOnline);
+                    window.removeEventListener('offline', handleOffline);
+                };
+            }, []);
+
+            // ---------- ATAJO DE TECLADO ----------
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                        e.preventDefault();
+                        if (!modalOpen) handleOpenAdd();
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [modalOpen]);
+
+            // ---------- DETECTAR CAMBIOS EN EL FORMULARIO ----------
+            useEffect(() => {
+                if (modalOpen) {
+                    const hasName = formData.name.trim().length > 0;
+                    const hasAmount = formData.amount && parseFloat(formData.amount) > 0;
+                    setHasChanges(hasName || hasAmount);
+                } else {
+                    setHasChanges(false);
+                }
+            }, [formData, modalOpen]);
+
+            // ---------- TOAST ----------
+            useEffect(() => {
+                if (toast) {
+                    const timer = setTimeout(() => setToast(null), 4000);
+                    return () => clearTimeout(timer);
+                }
+            }, [toast]);
+
+            // ---------- GUARDADO ----------
+            useEffect(() => {
+                saveData(data);
+            }, [data]);
+
+            // ---------- RECALCULO DE BLOQUES ----------
+            const recalcularBloques = (manual = false) => {
+                const resetDate = data.budgetReset?.date;
+                if (!resetDate) {
+                    if (manual) setToast('⚠️ Primero reinicia el ciclo');
+                    return false;
+                }
+
+                const hoy = new Date();
+                const semanaActual = getWeekNumber(hoy);
+                const ultimaSemanaRecalc = data.lastWeekRecalc;
+
+                if (ultimaSemanaRecalc === semanaActual && !manual) {
+                    return false;
+                }
+
+                const totalGastado = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                const presupuestoRestante = Math.max(0, data.presupuestoMioMensual - totalGastado);
+
+                if (presupuestoRestante <= 0) {
+                    if (manual) setToast('💰 Presupuesto agotado');
+                    return false;
+                }
+
+                setData(prev => ({
+                    ...prev,
+                    presupuestoMioMensual: presupuestoRestante,
+                    lastWeekRecalc: semanaActual
+                }));
+
+                if (manual) setToast('✅ Bloques actualizados');
+                return true;
+            };
+
+            useEffect(() => {
+                if (data.budgetReset?.date) {
+                    const timer = setTimeout(() => {
+                        recalcularBloques(false);
+                    }, 500);
+                    return () => clearTimeout(timer);
+                }
+            }, [data.budgetReset?.date]);
+
+            // ---------- REINICIAR CICLO ----------
+            const handleResetCycle = () => {
+                if (data.expenses.length === 0) {
+                    if (!window.confirm('¿Reiniciar ciclo sin gastos?')) return;
+                } else {
+                    if (!window.confirm('¿Reiniciar ciclo? Se generará un backup de los gastos actuales.')) return;
+                }
+
+                if (data.expenses.length > 0) {
+                    const hoy = new Date();
+                    const mesActual = hoy.toLocaleString('es', { month: 'long', year: 'numeric' });
+                    const fileName = `cierre_ciclo_${mesActual.replace(/ /g, '_')}.json`;
+                    
+                    const backupData = {
+                        fechaBackup: hoy.toISOString(),
+                        presupuestoMioMensual: data.presupuestoMioMensual,
+                        budgetReset: data.budgetReset,
+                        expenses: data.expenses
+                    };
+
+                    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    setToast(`📁 Backup: ${fileName}`);
+                }
+
+                const newData = {
+                    ...data,
+                    budgetReset: {
+                        date: new Date().toISOString(),
+                        base: data.presupuestoMioMensual
+                    },
+                    expenses: [],
+                    lastWeekRecalc: getWeekNumber(new Date())
+                };
+                setData(newData);
+                setToast('✅ Ciclo reiniciado');
+                updateLastActivity();
+            };
+
+            // ---------- VOZ ----------
+            const startVoiceRecognition = () => {
+                if (!isOnline) {
+                    setToast('⚠️ Sin conexión a internet');
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    setToast('⚠️ Tu navegador no soporta voz');
+                    return;
+                }
+
+                if (isListening) {
+                    recognitionRef.current?.stop();
+                    setIsListening(false);
+                    return;
+                }
+
+                try {
+                    const recognition = new SpeechRecognition();
+                    recognitionRef.current = recognition;
+                    recognition.lang = 'es-ES';
+                    recognition.continuous = false;
+                    recognition.interimResults = true;
+                    recognition.maxAlternatives = 1;
+
+                    recognition.onstart = () => {
+                        setIsListening(true);
+                        setToast('🎙️ Escuchando... habla claro');
+                    };
+
+                    recognition.onerror = (event) => {
+                        setIsListening(false);
+                        if (event.error === 'not-allowed') {
+                            setToast('⚠️ Permiso de micrófono denegado');
+                        } else if (event.error === 'network') {
+                            setToast('⚠️ Sin conexión a internet');
+                        } else {
+                            setToast('⚠️ Error: ' + event.error);
+                        }
+                    };
+
+                    recognition.onend = () => {
+                        setIsListening(false);
+                        setToast(null);
+                    };
+
+                    recognition.onresult = (event) => {
+                        const result = event.results[0];
+                        if (!result) return;
+                        
+                        const transcript = result[0].transcript.trim().toLowerCase();
+                        if (!transcript) return;
+
+                        let amount = '';
+                        let name = transcript;
+
+                        const match = transcript.match(/(\d+[,.]?\d*)\s*(?:euros?|eur|€)?\s*(.+)/i);
+                        const matchReverse = transcript.match(/(.+?)\s*(\d+[,.]?\d*)\s*(?:euros?|eur|€)?/i);
+
+                        if (match) {
+                            amount = match[1].replace(',', '.');
+                            name = match[2].trim() || transcript;
+                        } else if (matchReverse) {
+                            amount = matchReverse[2].replace(',', '.');
+                            name = matchReverse[1].trim() || transcript;
+                        } else {
+                            name = transcript;
+                        }
+
+                        setFormData(prev => ({
+                            ...prev,
+                            name: name.charAt(0).toUpperCase() + name.slice(1),
+                            amount: amount || prev.amount
+                        }));
+
+                        if (amount && name.length > 1) {
+                            setTimeout(() => {
+                                recognitionRef.current?.stop();
+                                setIsListening(false);
+                                setToast('✅ ¡Gasto reconocido! Revisa y guarda');
+                            }, 500);
+                        }
+                    };
+
+                    recognition.start();
+                } catch (error) {
+                    setIsListening(false);
+                    setToast('⚠️ Error al iniciar el micrófono');
+                }
+            };
+
+            // ---------- MODALES ----------
+            const handleCloseModal = () => {
+                if (hasChanges) {
+                    if (!window.confirm('Tienes cambios sin guardar. ¿Quieres salir?')) return;
+                }
+                setModalOpen(false);
+                setEditingId(null);
+                setFormData({ name: '', amount: '', category: 'Ocio', tipoGasto: 'Individual', fecha: new Date().toISOString().slice(0,10) });
+                setHasChanges(false);
+            };
+
+            const handleOpenAdd = () => {
+                setEditingId(null);
+                setFormData({ name: '', amount: '', category: 'Ocio', tipoGasto: 'Individual', fecha: new Date().toISOString().slice(0,10) });
+                setHasChanges(false);
+                setModalOpen(true);
+                setTimeout(() => inputRef.current?.focus(), 100);
+            };
+
+            const handleOpenEdit = (exp) => {
+                setEditingId(exp.id);
+                setFormData({ 
+                    name: exp.name, 
+                    amount: exp.amount, 
+                    category: exp.category || 'Otros', 
+                    tipoGasto: exp.tipoGasto || 'Individual', 
+                    fecha: exp.fecha 
+                });
+                setHasChanges(true);
+                setModalOpen(true);
+                setTimeout(() => inputRef.current?.focus(), 100);
+            };
+
+            const handleSaveExpense = (e) => {
+                e.preventDefault();
+                if (!formData.name.trim() || !formData.amount) return alert('Rellena nombre e importe');
+                
+                if (editingId) {
+                    setData(prev => ({
+                        ...prev,
+                        expenses: prev.expenses.map(ex => ex.id === editingId ? { ...ex, ...formData, amount: parseFloat(formData.amount) } : ex)
+                    }));
+                    setToast('✅ Gasto actualizado');
+                } else {
+                    const newExp = {
+                        id: Date.now(),
+                        name: formData.name,
+                        amount: parseFloat(formData.amount),
+                        category: formData.category,
+                        tipoGasto: formData.tipoGasto,
+                        fecha: formData.fecha,
+                        presupuestoMio: true
+                    };
+                    setData(prev => ({ ...prev, expenses: [newExp, ...prev.expenses] }));
+                    setToast('✅ Gasto guardado');
+                }
+
+                setModalOpen(false);
+                setEditingId(null);
+                setFormData({ name: '', amount: '', category: 'Ocio', tipoGasto: 'Individual', fecha: new Date().toISOString().slice(0,10) });
+                setHasChanges(false);
+                updateLastActivity();
+                setTimeout(() => recalcularBloques(false), 300);
+            };
+
+            const handleDelete = (id) => {
+                if (window.confirm('¿Borrar este gasto?')) {
+                    setData(prev => ({ ...prev, expenses: prev.expenses.filter(ex => ex.id !== id) }));
+                    setToast('🗑️ Gasto eliminado');
+                    updateLastActivity();
+                    setTimeout(() => recalcularBloques(false), 300);
+                }
+            };
+
+            // ---------- PRESUPUESTO BASE ----------
+            const handleSaveBase = () => {
+                const val = parseFloat(tempBase);
+                if (!isNaN(val) && val >= 0) {
+                    setData(prev => ({ ...prev, presupuestoMioMensual: val }));
+                    setIsEditingBase(false);
+                    setToast('✅ Presupuesto actualizado');
+                } else {
+                    alert('Introduce un importe válido');
+                }
+            };
+
+            // ---------- SYNC AUTOMÁTICO A DESCARGAS (Syncthing lee de aquí) ----------
+            // Cada snapshot es el JSON completo con nombre único (fecha+hora), así nunca
+            // se pisan ni se renombran solos en Android. El PC recoge el más reciente.
+            const exportSyncSnapshot = (manual = false) => {
+                const now = new Date();
+                const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bolsillo_sync_${stamp}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                setLastSyncAt(now.toISOString());
+                if (manual) setToast('📤 Sincronizado a Descargas');
+            };
+
+            // Alias con el nombre anterior por compatibilidad interna
+            const exportMobileJson = () => exportSyncSnapshot(true);
+
+            // Auto-sync: 2.5s después del último cambio en los gastos/presupuesto, sin tocar el móvil de nuevo
+            useEffect(() => {
+                if (!hasHydrated.current) { hasHydrated.current = true; return; }
+                const timer = setTimeout(() => {
+                    exportSyncSnapshot(false);
+                }, 2500);
+                return () => clearTimeout(timer);
+            }, [data.expenses, data.presupuestoMioMensual, data.budgetReset]);
+
+            // ---------- IMPORTAR / FUSIONAR (desde el móvil de empresa u otro backup) ----------
+            const handleImportFile = (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const incoming = JSON.parse(ev.target.result);
+                        const incomingExpenses = Array.isArray(incoming.expenses) ? incoming.expenses : [];
+                        if (incomingExpenses.length === 0) {
+                            setToast('⚠️ El archivo no tiene gastos');
+                            return;
+                        }
+                        const existingIds = new Set(data.expenses.map(ex => ex.id));
+                        const nuevos = incomingExpenses.filter(ex => !existingIds.has(ex.id));
+                        if (nuevos.length === 0) {
+                            setToast('ℹ️ No hay gastos nuevos que importar');
+                            return;
+                        }
+                        setData(prev => ({
+                            ...prev,
+                            expenses: [...nuevos, ...prev.expenses].sort((a, b) => new Date(b.fecha) - new Date(a.fecha) || b.id - a.id)
+                        }));
+                        setToast(`✅ ${nuevos.length} gasto${nuevos.length > 1 ? 's' : ''} importado${nuevos.length > 1 ? 's' : ''} · tus datos actuales no se han tocado`);
+                        updateLastActivity();
+                        setTimeout(() => recalcularBloques(false), 300);
+                    } catch (err) {
+                        setToast('⚠️ Archivo no válido');
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+            // ---------- EXPORTAR CSV ----------
+            const exportCSV = () => {
+                if (data.expenses.length === 0) {
+                    setToast('⚠️ No hay gastos para exportar');
+                    return;
+                }
+                let csv = "Fecha,Concepto,Importe,Categoria,Ambito\n";
+                data.expenses.forEach(e => {
+                    csv += `${e.fecha},${e.name},${e.amount},${e.category || 'Otros'},${e.tipoGasto || 'Individual'}\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gastos_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                setToast('📤 CSV exportado!');
+            };
+
+            // ---------- EDITAR BANCO ----------
+            const handleEditBanco = () => {
+                const nuevoBanco = prompt('Nombre del banco:', data.banco);
+                if (nuevoBanco && nuevoBanco.trim()) {
+                    setData(prev => ({ ...prev, banco: nuevoBanco.trim() }));
+                    setToast('✅ Banco actualizado');
+                }
+            };
+
+            // ---------- TOGGLE TEMA ----------
+            const toggleTheme = () => {
+                setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+            };
+
+            // ---------- PRESUPUESTO SEMANAL CON DETALLE DE ROLLOVER ----------
+            const presupuestoSemanal = useMemo(() => {
+                const hoy = new Date();
+                const cycleStartStr = data.budgetReset?.date || null;
+                const activeBase = data.presupuestoMioMensual; 
+                const weeks = getFinancialCycleWeeks(cycleStartStr);
+                const budgetPerDay = activeBase / 30;
+
+                const semanasConDatos = weeks.map((w, idx) => {
+                    const expensesInWeek = data.expenses.filter(e => {
+                        const d = new Date(e.fecha).getTime();
+                        const startTime = new Date(w.startChunk).setHours(0,0,0,0);
+                        const endTime = new Date(w.endChunk).setHours(23,59,59,999);
+                        return d >= startTime && d <= endTime;
+                    });
+                    const totalGastos = expensesInWeek.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                    const presupuestoBase = w.days * budgetPerDay;
+                    return { ...w, presupuestoBase, totalGastos };
+                });
+
+                let acumulado = 0;
+                const semanasConRollover = semanasConDatos.map((w) => {
+                    const disponible = acumulado + w.presupuestoBase;
+                    const nuevoRemanente = disponible - w.totalGastos;
+                    const ajuste = acumulado;
+                    acumulado = nuevoRemanente;
+                    return { 
+                        ...w, 
+                        disponible, 
+                        nuevoRemanente,
+                        ajuste,
+                        presupuestoReal: w.presupuestoBase + ajuste
+                    };
+                });
+
+                let semanaActual = semanasConRollover.find(w => hoy.getTime() >= new Date(w.startChunk).setHours(0,0,0,0) && hoy.getTime() <= new Date(w.endChunk).setHours(23,59,59,999)) || semanasConRollover[0];
+
+                const totalGastadoCiclo = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                const restanteTotalMes = activeBase - totalGastadoCiclo;
+                const porcentajeUsadoMes = activeBase > 0 ? Math.min(100, (totalGastadoCiclo / activeBase) * 100) : 0;
+
+                const porCategoria = {};
+                CATEGORIAS_GASTO.forEach(cat => {
+                    porCategoria[cat] = data.expenses
+                        .filter(e => (e.category || 'Otros') === cat)
+                        .reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                });
+                
+                const semanaNumActual = getWeekNumber(hoy);
+                const ajustePendiente = data.lastWeekRecalc !== null && data.lastWeekRecalc !== semanaNumActual;
+
+                const hoyStr = hoy.toISOString().slice(0,10);
+                const gastoHoy = data.expenses
+                    .filter(e => e.fecha === hoyStr)
+                    .reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+
+                const presupuestoRealActual = semanaActual ? semanaActual.presupuestoReal : 0;
+                const remanenteAcumulado = semanaActual ? semanaActual.ajuste : 0;
+                const gastosSemanaActual = semanaActual ? semanaActual.totalGastos : 0;
+                const disponibleAhora = presupuestoRealActual - gastosSemanaActual;
+
+                return { 
+                    semanas: semanasConRollover, 
+                    semanaActual, 
+                    disponibleAhora,
+                    restanteTotalMes,
+                    porcentajeUsadoMes,
+                    totalGastadoCiclo,
+                    porCategoria,
+                    activeBase,
+                    ajustePendiente,
+                    gastoHoy,
+                    presupuestoRealActual,
+                    remanenteAcumulado,
+                    gastosSemanaActual
+                };
+            }, [data.expenses, data.presupuestoMioMensual, data.budgetReset, data.lastWeekRecalc]);
+
+            const { 
+                semanas, 
+                semanaActual, 
+                disponibleAhora,
+                restanteTotalMes, 
+                porcentajeUsadoMes,
+                totalGastadoCiclo, 
+                porCategoria, 
+                activeBase, 
+                ajustePendiente, 
+                gastoHoy,
+                presupuestoRealActual,
+                remanenteAcumulado,
+                gastosSemanaActual
+            } = presupuestoSemanal;
+
+            const radius = 40;
+            const circumference = 2 * Math.PI * radius;
+            let accumulatedPercent = 0;
+
+            const donutSlices = CATEGORIAS_GASTO.map(cat => {
+                const amount = porCategoria[cat] || 0;
+                const percent = totalGastadoCiclo > 0 ? (amount / totalGastadoCiclo) * 100 : 0;
+                const strokeVal = (percent / 100) * circumference;
+                const dashOffset = -((accumulatedPercent / 100) * circumference);
+                accumulatedPercent += percent;
+                return {
+                    cat,
+                    amount,
+                    percent,
+                    strokeDasharray: `${strokeVal} ${circumference}`,
+                    strokeDashoffset: dashOffset,
+                    color: COLORES_CATEGORIA[cat]
+                };
+            });
+
+            const categoryExpenses = useMemo(() => {
+                if (!selectedCategoryModal) return { individual: [], comun: [], totalInd: 0, totalCom: 0 };
+                const list = data.expenses.filter(e => (e.category || 'Otros') === selectedCategoryModal);
+                const individual = list.filter(e => (e.tipoGasto || 'Individual') === 'Individual');
+                const comun = list.filter(e => e.tipoGasto === 'Común');
+                const totalInd = individual.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                const totalCom = comun.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                return { individual, comun, totalInd, totalCom };
+            }, [data.expenses, selectedCategoryModal]);
+
+            return (
+                <div className="space-y-4 animate-fade">
+                    {toast && (
+                        <div className="toast">
+                            {toast}
+                        </div>
+                    )}
+
+                    {/* Modal de Bienvenida de Voz */}
+                    {!voiceGuideShown && ReactDOM.createPortal(
+                        <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-[#0f111a] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl animate-fade text-center relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
+                                <div className="w-20 h-20 mx-auto bg-indigo-500/10 rounded-full flex items-center justify-center mb-5 border border-indigo-500/20">
+                                    <i className="fa-solid fa-microphone text-4xl text-indigo-400"></i>
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-2">🎙️ Dicta tus gastos</h3>
+                                <p className="text-sm text-slate-400 mb-4">Sin escribir, solo habla</p>
+                                <div className="bg-black/40 p-4 rounded-2xl border border-white/5 text-left space-y-3 mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-indigo-400 text-sm">💬</span>
+                                        <span className="text-slate-300 text-sm">"40 euros zapatos"</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-indigo-400 text-sm">💬</span>
+                                        <span className="text-slate-300 text-sm">"café 2.50"</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-indigo-400 text-sm">💬</span>
+                                        <span className="text-slate-300 text-sm">"comida 25"</span>
+                                    </div>
+                                </div>
+                                <div className="text-xs text-slate-400 space-y-2 text-left mb-6">
+                                    <p>📌 Solo tienes que hablar, la app rellena el importe y el concepto</p>
+                                    <p>🔄 Puedes corregir el texto antes de guardar</p>
+                                    <p>⚡ Necesita conexión a internet</p>
+                                </div>
+                                <button 
+                                    onClick={() => { 
+                                        setVoiceGuideShown(true);
+                                        localStorage.setItem(VOICE_GUIDE_SHOWN_KEY, 'true');
+                                    }} 
+                                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-sm transition-all shadow-lg active:scale-95"
+                                >
+                                    ENTENDIDO
+                                </button>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {/* CABECERA LIMPIA */}
+                    <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-md gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <h1 className="text-lg font-black text-white tracking-tight">Mi Bolsillo</h1>
+                                    <span className={`total-hoy text-[12px] font-bold px-2 py-1 rounded-full ${gastoHoy > 0 ? 'bg-rose-500/30 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400'}`}>
+                                        Hoy: {gastoHoy.toFixed(1)}€
+                                    </span>
+                                    <span 
+                                        onClick={handleEditBanco}
+                                        className="text-[12px] font-bold text-slate-400 border border-white/5 px-2 py-0.5 rounded-full banco-edit hover:border-indigo-500/50"
+                                        title="Haz clic para cambiar el nombre del banco"
+                                    >
+                                        {data.banco} <i className="fa-solid fa-pen text-[11px] ml-1"></i>
+                                    </span>
+                                </div>
+                                <p className="text-[12px] text-slate-400 uppercase tracking-widest mt-0.5">
+                                    {lastSyncAt ? `Sincronizado ${new Date(lastSyncAt).toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'})}` : 'Sincronizable'}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <button onClick={toggleTheme} className="theme-toggle" title="Cambiar tema">
+                                <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+                            </button>
+                            <input type="file" accept="application/json" ref={importInputRef} onChange={handleImportFile} className="hidden" />
+                            <button onClick={() => importInputRef.current?.click()} title="Importar gastos de otro móvil sin perder los tuyos" className="bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
+                                <i className="fa-solid fa-file-arrow-up"></i>
+                            </button>
+                            <button onClick={exportMobileJson} title="Forzar sincronización ahora" className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
+                                <i className="fa-solid fa-file-arrow-down"></i> PC
+                            </button>
+                            <button onClick={exportCSV} className="bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
+                                <i className="fa-solid fa-file-csv"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                    {/* HERO: único número que importa */}
+                    <div ref={el => cardRefs.current['hero'] = el} style={{ order: liveCardOrder.indexOf('hero') }} className={`transition-transform duration-150 ${draggingCard === 'hero' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
+                        <div onPointerDown={(e) => cardDrag.onPointerDown('hero', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
+                            <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
+                        </div>
+                    <div className="bg-gradient-to-br from-indigo-900/30 to-black/40 border border-indigo-500/20 rounded-3xl p-5 space-y-4">
+                        <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1">
+                                <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Puedes gastar ahora</p>
+                                <p className={`presupuesto-real ${disponibleAhora >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                                    {disponibleAhora >= 0 ? '' : '−'}{Math.abs(disponibleAhora).toFixed(2)}€
+                                </p>
+                                <p className="text-[12px] text-slate-400 mt-1">
+                                    {remanenteAcumulado >= 0 ? `Incluye +${remanenteAcumulado.toFixed(0)}€` : `Incluye ${remanenteAcumulado.toFixed(0)}€`} de semanas anteriores · presupuesto de esta semana {presupuestoRealActual.toFixed(0)}€
+                                </p>
+                            </div>
+                            <button 
+                                onClick={handleOpenAdd} 
+                                className="btn-add bg-white text-black border border-white/10 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg active:scale-95 transition-all shrink-0"
+                            >
+                                <i className="fa-solid fa-plus"></i> GASTO
+                            </button>
+                        </div>
+                        <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                            <div className={`h-full transition-all duration-500 ${gastosSemanaActual > presupuestoRealActual ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${presupuestoRealActual > 0 ? Math.min(100, (gastosSemanaActual / presupuestoRealActual) * 100) : 100}%` }}></div>
+                        </div>
+                        <div className="text-[12px] text-slate-300 flex justify-between items-center">
+                            <span>Gastado esta semana</span>
+                            <span className="text-rose-400 font-bold text-sm">{gastosSemanaActual.toFixed(2)}€</span>
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Restante del mes completo con BASE EDITABLE */}
+                    <div ref={el => cardRefs.current['restante'] = el} style={{ order: liveCardOrder.indexOf('restante') }} className={`transition-transform duration-150 ${draggingCard === 'restante' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
+                        <div onPointerDown={(e) => cardDrag.onPointerDown('restante', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
+                            <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
+                        </div>
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Restante del mes completo</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-400">Base:</span>
+                                {!isEditingBase ? (
+                                    <button 
+                                        onClick={() => { setIsEditingBase(true); setTempBase(data.presupuestoMioMensual); }}
+                                        className="text-sm font-bold text-white hover:text-indigo-400 transition-colors flex items-center gap-1"
+                                    >
+                                        {data.presupuestoMioMensual.toFixed(0)}€
+                                        <i className="fa-solid fa-pen text-[11px] text-slate-400"></i>
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-1">
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            value={tempBase} 
+                                            onChange={e => setTempBase(e.target.value)} 
+                                            className="w-16 bg-black/50 border border-indigo-500 rounded-lg p-1 text-white font-bold text-xs focus:outline-none"
+                                            autoFocus 
+                                        />
+                                        <button onClick={handleSaveBase} className="bg-emerald-600 text-white px-1.5 py-0.5 rounded font-bold text-[11px]">OK</button>
+                                        <button onClick={() => setIsEditingBase(false)} className="bg-slate-700 text-white px-1.5 py-0.5 rounded font-bold text-[11px]">✕</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-end">
+                            <p className={`text-3xl font-black ${restanteTotalMes >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {restanteTotalMes.toFixed(2)}€
+                            </p>
+                            <p className="text-sm font-bold text-slate-300">{porcentajeUsadoMes.toFixed(0)}% usado</p>
+                        </div>
+                        <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden mt-2">
+                            <div className={`h-full transition-all duration-500 ${porcentajeUsadoMes >= 100 ? 'bg-rose-500' : porcentajeUsadoMes >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${porcentajeUsadoMes}%` }}></div>
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Ciclo de 30 días: chips visuales */}
+                    <div ref={el => cardRefs.current['ciclo'] = el} style={{ order: liveCardOrder.indexOf('ciclo') }} className={`transition-transform duration-150 ${draggingCard === 'ciclo' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
+                        <div onPointerDown={(e) => cardDrag.onPointerDown('ciclo', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
+                            <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
+                        </div>
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-sm font-black text-white uppercase tracking-wider">Ciclo de 30 Días</h2>
+                                {ajustePendiente && (
+                                    <span className="bg-amber-500/20 text-amber-400 text-[11px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                                        ↻ Pendiente
+                                    </span>
+                                )}
+                            </div>
+                            <button onClick={handleResetCycle} className="text-[11px] text-rose-400 font-bold border border-rose-500/20 bg-rose-500/10 px-2 py-1 rounded-lg active:scale-95 transition-transform">
+                                <i className="fa-solid fa-rotate-left mr-1"></i>Reiniciar
+                            </button>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                            {semanas.map((w, idx) => {
+                                const esActual = semanaActual && w.startChunk.getTime() === semanaActual.startChunk.getTime();
+                                const excedida = w.totalGastos > w.presupuestoReal;
+                                return (
+                                    <div key={idx} className={`shrink-0 w-28 p-3 rounded-2xl border ${esActual ? 'bg-indigo-500/10 border-indigo-500/40' : 'bg-black/30 border-white/5'}`}>
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">{w.name}</p>
+                                        <p className="text-[11px] text-slate-400 mb-1.5">{w.startChunk.getDate()}/{w.startChunk.getMonth()+1} - {w.endChunk.getDate()}/{w.endChunk.getMonth()+1}</p>
+                                        <p className={`text-sm font-black ${excedida ? 'text-rose-400' : 'text-white'}`}>{w.presupuestoReal.toFixed(0)}€</p>
+                                        <p className="text-[11px] text-slate-400">gastado {w.totalGastos.toFixed(0)}€</p>
+                                        <div className="h-1 w-full bg-black/40 rounded-full overflow-hidden mt-1.5">
+                                            <div className={`h-full ${excedida ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${w.presupuestoReal > 0 ? Math.min(100, (w.totalGastos / w.presupuestoReal) * 100) : 100}%` }}></div>
+                                        </div>
+                                        {esActual && <p className="text-[11px] text-indigo-400 font-bold mt-1">● ACTUAL</p>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Categorías: donut + leyenda */}
+                    <div ref={el => cardRefs.current['categorias'] = el} style={{ order: liveCardOrder.indexOf('categorias') }} className={`transition-transform duration-150 ${draggingCard === 'categorias' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
+                        <div onPointerDown={(e) => cardDrag.onPointerDown('categorias', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
+                            <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
+                        </div>
+                    <div className="bg-white/5 border border-white/10 p-5 rounded-3xl space-y-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Gastos por Categoría</span>
+                        </div>
+
+                        <div className="flex items-center justify-around bg-black/30 p-4 rounded-2xl border border-white/5">
+                            <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                                <svg className="w-24 h-24 transform -rotate-90">
+                                    <circle cx="48" cy="48" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="10" fill="transparent" />
+                                    {totalGastadoCiclo > 0 ? (
+                                        donutSlices.map((slice, idx) => (
+                                            slice.amount > 0 && (
+                                                <circle
+                                                    key={idx}
+                                                    cx="48"
+                                                    cy="48"
+                                                    r={radius}
+                                                    stroke={slice.color}
+                                                    strokeWidth="10"
+                                                    fill="transparent"
+                                                    strokeDasharray={slice.strokeDasharray}
+                                                    strokeDashoffset={slice.strokeDashoffset}
+                                                />
+                                            )
+                                        ))
+                                    ) : null}
+                                </svg>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                    <span className="text-xs font-black text-white">{totalGastadoCiclo.toFixed(0)}€</span>
+                                    <span className="text-[11px] text-slate-400 uppercase tracking-wider">Gastado</span>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1.5 text-xs">
+                                {liveCategoryOrder.map(cat => {
+                                    const amount = porCategoria[cat] || 0;
+                                    return (
+                                        <div 
+                                            key={cat} 
+                                            ref={el => categoryRefs.current[cat] = el}
+                                            style={{ order: liveCategoryOrder.indexOf(cat) }}
+                                            className={`flex items-center justify-between gap-4 px-2 py-1 rounded-lg transition-colors group ${draggingCategory === cat ? 'bg-white/10 scale-[1.02] shadow-lg relative z-20' : ''}`}
+                                        >
+                                            <div className="flex items-center gap-1.5 cursor-pointer hover:bg-white/5 rounded-lg flex-1" onClick={() => setSelectedCategoryModal(cat)}>
+                                                <i onPointerDown={(e) => { e.stopPropagation(); categoryDrag.onPointerDown(cat, e); }} className="fa-solid fa-grip-vertical text-slate-600 text-[10px] cursor-grab active:cursor-grabbing touch-none px-0.5"></i>
+                                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORES_CATEGORIA[cat] }}></span>
+                                                <span className="text-slate-300 font-medium group-hover:text-white underline-offset-4 group-hover:underline">{cat}</span>
+                                            </div>
+                                            <span className="font-bold text-white cursor-pointer" onClick={() => setSelectedCategoryModal(cat)}>{amount.toFixed(0)}€</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* Movimientos */}
+                    <div ref={el => cardRefs.current['movimientos'] = el} style={{ order: liveCardOrder.indexOf('movimientos') }} className={`transition-transform duration-150 ${draggingCard === 'movimientos' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
+                        <div onPointerDown={(e) => cardDrag.onPointerDown('movimientos', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
+                            <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
+                        </div>
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Movimientos Móvil</h3>
+                        <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                            {data.expenses.length === 0 && <p className="text-slate-400 text-xs text-center py-4">Sin gastos registrados en el móvil.</p>}
+                            {data.expenses.map((exp, idx) => (
+                                <div key={exp.id} className={`expense-enter p-3 rounded-xl bg-black/40 border border-white/5 text-xs ${idx === 0 ? 'border-indigo-500/30' : ''}`} style={{ animationDelay: `${idx * 0.05}s` }}>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-white">{exp.name}</p>
+                                                <span className="text-[11px] px-1.5 py-0.5 rounded font-extrabold bg-indigo-500/20 text-indigo-300">
+                                                    {exp.category || 'Otros'}
+                                                </span>
+                                                <span className={`text-[11px] px-1.5 py-0.5 rounded font-extrabold ${exp.tipoGasto === 'Común' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                                                    {exp.tipoGasto || 'Individual'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[12px] text-slate-400 mt-0.5">{formatFechaAmigable(exp.fecha)} · {data.banco}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-black text-rose-400">-{parseFloat(exp.amount).toFixed(2)}€</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => handleOpenEdit(exp)} className="text-slate-400 hover:text-indigo-400 p-1"><i className="fa-solid fa-pen text-xs"></i></button>
+                                                <button onClick={() => handleDelete(exp.id)} className="text-slate-400 hover:text-rose-400 p-1"><i className="fa-solid fa-trash text-xs"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    </div>
+                    </div>
+
+                    {/* Modales (sin cambios) */}
+                    {selectedCategoryModal && ReactDOM.createPortal(
+                        <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-[#0f111a] border border-white/10 p-6 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: COLORES_CATEGORIA[selectedCategoryModal] }}></span>
+                                        <h3 className="text-base font-black text-white">{selectedCategoryModal}</h3>
+                                    </div>
+                                    <button onClick={() => setSelectedCategoryModal(null)} className="text-slate-400 p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
+                                </div>
+
+                                <div className="space-y-4 text-xs">
+                                    <div className="bg-black/40 p-3.5 rounded-2xl border border-white/5 space-y-2">
+                                        <div className="flex justify-between items-center font-bold text-slate-300 border-b border-white/5 pb-1">
+                                            <span>Individuales</span>
+                                            <span className="text-indigo-400">{categoryExpenses.totalInd.toFixed(2)}€</span>
+                                        </div>
+                                        {categoryExpenses.individual.length === 0 ? (
+                                            <p className="text-slate-400 text-[12px] py-1">Sin gastos individuales.</p>
+                                        ) : (
+                                            <div className="space-y-1.5 pt-1">
+                                                {categoryExpenses.individual.map(e => (
+                                                    <div key={e.id} className="flex justify-between items-center text-[12px]">
+                                                        <span className="text-white font-medium">{e.name} <span className="text-slate-400 text-[11px]">({formatFechaAmigable(e.fecha)})</span></span>
+                                                        <span className="font-bold text-rose-400">-{parseFloat(e.amount).toFixed(2)}€</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-black/40 p-3.5 rounded-2xl border border-white/5 space-y-2">
+                                        <div className="flex justify-between items-center font-bold text-slate-300 border-b border-white/5 pb-1">
+                                            <span>En Común</span>
+                                            <span className="text-emerald-400">{categoryExpenses.totalCom.toFixed(2)}€</span>
+                                        </div>
+                                        {categoryExpenses.comun.length === 0 ? (
+                                            <p className="text-slate-400 text-[12px] py-1">Sin gastos en común.</p>
+                                        ) : (
+                                            <div className="space-y-1.5 pt-1">
+                                                {categoryExpenses.comun.map(e => (
+                                                    <div key={e.id} className="flex justify-between items-center text-[12px]">
+                                                        <span className="text-white font-medium">{e.name} <span className="text-slate-400 text-[11px]">({formatFechaAmigable(e.fecha)})</span></span>
+                                                        <span className="font-bold text-rose-400">-{parseFloat(e.amount).toFixed(2)}€</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <button onClick={() => setSelectedCategoryModal(null)} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {modalOpen && ReactDOM.createPortal(
+                        <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+                            <div className="bg-[#0f111a] border border-white/10 p-6 rounded-t-[2.5rem] sm:rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-base font-black text-white">{editingId ? 'Editar Gasto' : 'Añadir Gasto Rápido'}</h3>
+                                    <button onClick={handleCloseModal} className="text-slate-400 hover:text-white transition-colors p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
+                                </div>
+                                <form onSubmit={handleSaveExpense} className="space-y-3">
+                                    <div>
+                                        <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Concepto</label>
+                                        <div className="flex gap-2 items-center">
+                                            <input 
+                                                ref={inputRef}
+                                                type="text" 
+                                                value={formData.name} 
+                                                onChange={e => setFormData({...formData, name: e.target.value})} 
+                                                className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500" 
+                                                placeholder="Ej: Gasolina, café..." 
+                                                required 
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={startVoiceRecognition}
+                                                disabled={!isOnline}
+                                                className={`mic-btn p-3 rounded-xl border transition-all flex-shrink-0 relative ${isListening ? 'active bg-rose-500/20 border-rose-500/50 text-rose-400' : isOnline ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/30' : 'bg-slate-700/50 border-slate-600/30 text-slate-400 cursor-not-allowed'}`}
+                                                title={isOnline ? 'Dictar por voz' : 'Sin conexión a internet'}
+                                            >
+                                                <i className={`fa-solid ${isListening ? 'fa-circle-stop' : 'fa-microphone'}`}></i>
+                                                {!isOnline && (
+                                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+                                                )}
+                                            </button>
+                                        </div>
+                                        {!isOnline && (
+                                            <p className="text-[11px] text-amber-400 mt-1">📶 Sin conexión · La voz no está disponible</p>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Importe (€)</label>
+                                            <input 
+                                                type="number" 
+                                                step="0.01" 
+                                                inputMode="decimal"
+                                                value={formData.amount} 
+                                                onChange={e => setFormData({...formData, amount: e.target.value})} 
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500" 
+                                                placeholder="0.00" 
+                                                required 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Categoría</label>
+                                            <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm appearance-none">
+                                                {CATEGORIAS_GASTO.map(cat => (
+                                                    <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Ámbito</label>
+                                            <select value={formData.tipoGasto} onChange={e => setFormData({...formData, tipoGasto: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm appearance-none">
+                                                <option value="Individual" className="bg-slate-900">Individual</option>
+                                                <option value="Común" className="bg-slate-900">Común</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Fecha</label>
+                                            <input type="date" value={formData.fecha} onChange={e => setFormData({...formData, fecha: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500" required />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 mt-2">
+                                        <button type="submit" className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-sm transition-all shadow-lg active:scale-95">
+                                            {editingId ? 'ACTUALIZAR' : 'GUARDAR'}
+                                        </button>
+                                        <button type="button" onClick={handleCloseModal} className="py-3.5 px-4 bg-white/5 hover:bg-white/10 text-slate-400 rounded-xl font-bold text-sm transition-all active:scale-95">
+                                            CANCELAR
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
