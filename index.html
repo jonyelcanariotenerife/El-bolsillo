@@ -28,7 +28,7 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020205; color: #e2e8f0; min-height: 100vh; padding-bottom: 40px; transition: background-color 0.3s, color 0.3s; }
-        /* Modo claro — paleta pastel cálida, nada de blanco puro ni colores saturados */
+        /* Modo claro — paleta pastel cálida */
         body.light-mode { background-color: #f4efe6; color: #2b2620; }
         body.light-mode .bg-white\/5 { background-color: #efe8da; }
         body.light-mode .border-white\/10 { border-color: rgba(43,38,32,0.1); }
@@ -45,7 +45,7 @@
         body.light-mode .border-indigo-500\/40 { border-color: rgba(124,110,201,0.4); }
         body.light-mode .border-indigo-500\/50 { border-color: rgba(124,110,201,0.5); }
 
-        /* Acentos pastelizados: mismas familias de color, ajustadas para contraste sobre fondo claro */
+        /* Acentos pastelizados */
         body.light-mode .text-indigo-400, body.light-mode .text-indigo-300 { color: #6a5bc2; }
         body.light-mode .text-rose-400 { color: #b8496a; }
         body.light-mode .text-emerald-400, body.light-mode .text-emerald-300 { color: #3f9e78; }
@@ -70,7 +70,7 @@
         body.light-mode .bg-emerald-500\/20 { background-color: rgba(79,172,134,0.16); }
         body.light-mode .bg-amber-500\/20 { background-color: rgba(179,130,58,0.16); }
 
-        /* Modales: en modo claro deben ser claros también, no una caja negra flotando */
+        /* Modales */
         body.light-mode .bg-\[\#0f111a\] { background-color: #fbf8f2; border-color: rgba(43,38,32,0.1) !important; }
         body.light-mode .bg-black\/80 { background-color: rgba(43,38,32,0.35); }
 
@@ -105,7 +105,6 @@
         .banco-edit:hover { color: #818cf8; text-decoration: underline; }
         .theme-toggle { cursor: pointer; transition: all 0.2s; font-size: 0.9rem; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
         .theme-toggle:hover { background: rgba(255,255,255,0.1); }
-        /* Centrado real en móvil: 100dvh se adapta a la barra de direcciones visible, a diferencia de inset-0/100vh */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; height: 100dvh; }
     </style>
 </head>
@@ -119,6 +118,7 @@
         const VOICE_GUIDE_SHOWN_KEY = 'quantum_voice_guide_shown';
         const THEME_KEY = 'quantum_pocket_theme';
         const LAST_ACTIVITY_KEY = 'quantum_pocket_last_activity';
+        const LAST_WEEKLY_BACKUP_KEY = 'quantum_pocket_last_weekly_backup';
 
         const DEFAULT_DATA = {
             presupuestoMioMensual: 439.12,
@@ -127,21 +127,22 @@
             lastWeekRecalc: null,
             banco: 'ING',
             cardOrder: ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'],
-            categoryOrder: ['Ocio', 'Alimentación', 'Transporte', 'Casa', 'Otros']
+            categoryOrder: ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Casa', 'Otros']
         };
 
         const CARD_IDS = ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'];
 
-        const CATEGORIAS_GASTO = ['Ocio', 'Alimentación', 'Transporte', 'Casa', 'Otros'];
+        const CATEGORIAS_GASTO = ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Casa', 'Otros'];
         const COLORES_CATEGORIA = {
             'Ocio': '#818cf8',
             'Alimentación': '#34d399',
-            'Transporte': '#fbbf24',
+            'Gasolina Moto': '#06b6d4',
+            'Gasoil Coche': '#fbbf24',
             'Casa': '#f43f5e',
-            'Otros': '#94a3b8'
+            'Otros': '#94a3b8',
+            'Transporte': '#fbbf24'
         };
 
-        // Repara un array de orden guardado: conserva lo válido, añade lo que falte, descarta lo desconocido
         const sanitizeOrder = (saved, canonical) => {
             if (!Array.isArray(saved)) return [...canonical];
             const valid = saved.filter(id => canonical.includes(id));
@@ -268,13 +269,11 @@
             });
             const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-            // TEMA
             const [theme, setTheme] = useState(() => {
                 const saved = localStorage.getItem(THEME_KEY);
                 return saved || 'dark';
             });
 
-            // Aplicar tema al body
             useEffect(() => {
                 if (theme === 'light') {
                     document.body.classList.add('light-mode');
@@ -284,7 +283,6 @@
                 localStorage.setItem(THEME_KEY, theme);
             }, [theme]);
 
-            // NOTIFICACIÓN DE RECORDATORIO (al abrir la app)
             useEffect(() => {
                 const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
                 if (lastActivity) {
@@ -294,11 +292,9 @@
                         setToast('🔔 ¿Has hecho algún gasto hoy? ¡Apúntalo!');
                     }
                 }
-                // Actualizar última actividad
                 localStorage.setItem(LAST_ACTIVITY_KEY, new Date().toISOString());
             }, []);
 
-            // Actualizar última actividad al añadir/editar/eliminar gasto
             const updateLastActivity = () => {
                 localStorage.setItem(LAST_ACTIVITY_KEY, new Date().toISOString());
             };
@@ -309,7 +305,6 @@
             const hasHydrated = useRef(false);
             const [lastSyncAt, setLastSyncAt] = useState(null);
 
-            // ---------- REORDENAR (mantener pulsado y arrastrar) ----------
             const cardRefs = useRef({});
             const categoryRefs = useRef({});
             const [draggingCard, setDraggingCard] = useState(null);
@@ -321,8 +316,6 @@
             const LONG_PRESS_MS = 400;
             const MOVE_CANCEL_PX = 8;
 
-            // Fábrica de manejadores de arrastre: crea el set de handlers para una lista reordenable
-            // (se usa una vez para las tarjetas y otra para las categorías del donut)
             const makeReorderHandlers = ({ refsMap, liveOrder, setLiveOrder, setDragging, dataKey }) => {
                 const onPointerDown = (id, e) => {
                     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -368,7 +361,6 @@
                 setDragging: setDraggingCategory, dataKey: 'categoryOrder'
             });
 
-            // Movimiento y suelta globales mientras hay un elemento "activo" en modo arrastre
             useEffect(() => {
                 const info = dragInfoRef.current;
                 if (!info) return;
@@ -415,7 +407,6 @@
                 };
             }, [draggingCard, draggingCategory]);
 
-            // ---------- DETECCIÓN DE CONEXIÓN ----------
             useEffect(() => {
                 const handleOnline = () => setIsOnline(true);
                 const handleOffline = () => setIsOnline(false);
@@ -427,7 +418,6 @@
                 };
             }, []);
 
-            // ---------- ATAJO DE TECLADO ----------
             useEffect(() => {
                 const handleKeyDown = (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
@@ -439,7 +429,6 @@
                 return () => window.removeEventListener('keydown', handleKeyDown);
             }, [modalOpen]);
 
-            // ---------- DETECTAR CAMBIOS EN EL FORMULARIO ----------
             useEffect(() => {
                 if (modalOpen) {
                     const hasName = formData.name.trim().length > 0;
@@ -450,7 +439,6 @@
                 }
             }, [formData, modalOpen]);
 
-            // ---------- TOAST ----------
             useEffect(() => {
                 if (toast) {
                     const timer = setTimeout(() => setToast(null), 4000);
@@ -458,12 +446,10 @@
                 }
             }, [toast]);
 
-            // ---------- GUARDADO ----------
             useEffect(() => {
                 saveData(data);
             }, [data]);
 
-            // ---------- RECALCULO DE BLOQUES ----------
             const recalcularBloques = (manual = false) => {
                 const resetDate = data.budgetReset?.date;
                 if (!resetDate) {
@@ -506,7 +492,6 @@
                 }
             }, [data.budgetReset?.date]);
 
-            // ---------- REINICIAR CICLO ----------
             const handleResetCycle = () => {
                 if (data.expenses.length === 0) {
                     if (!window.confirm('¿Reiniciar ciclo sin gastos?')) return;
@@ -550,7 +535,6 @@
                 updateLastActivity();
             };
 
-            // ---------- VOZ ----------
             const startVoiceRecognition = () => {
                 if (!isOnline) {
                     setToast('⚠️ Sin conexión a internet');
@@ -621,11 +605,21 @@
                             name = transcript;
                         }
 
-                        setFormData(prev => ({
-                            ...prev,
-                            name: name.charAt(0).toUpperCase() + name.slice(1),
-                            amount: amount || prev.amount
-                        }));
+                        setFormData(prev => {
+                            let autoCategory = prev.category;
+                            if (transcript.includes('gasolina')) {
+                                autoCategory = 'Gasolina Moto';
+                            } else if (transcript.includes('gasoil') || transcript.includes('diésel') || transcript.includes('diesel')) {
+                                autoCategory = 'Gasoil Coche';
+                            }
+                            
+                            return {
+                                ...prev,
+                                name: name.charAt(0).toUpperCase() + name.slice(1),
+                                amount: amount || prev.amount,
+                                category: autoCategory
+                            };
+                        });
 
                         if (amount && name.length > 1) {
                             setTimeout(() => {
@@ -643,7 +637,6 @@
                 }
             };
 
-            // ---------- MODALES ----------
             const handleCloseModal = () => {
                 if (hasChanges) {
                     if (!window.confirm('Tienes cambios sin guardar. ¿Quieres salir?')) return;
@@ -717,7 +710,6 @@
                 }
             };
 
-            // ---------- PRESUPUESTO BASE ----------
             const handleSaveBase = () => {
                 const val = parseFloat(tempBase);
                 if (!isNaN(val) && val >= 0) {
@@ -729,36 +721,48 @@
                 }
             };
 
-            // ---------- SYNC AUTOMÁTICO A DESCARGAS (Syncthing lee de aquí) ----------
-            // Cada snapshot es el JSON completo con nombre único (fecha+hora), así nunca
-            // se pisan ni se renombran solos en Android. El PC recoge el más reciente.
-            const exportSyncSnapshot = (manual = false) => {
+            // ---------- SYNC MANUAL Y BACKUP SEMANAL ----------
+            const exportSyncSnapshot = (manual = false, isWeekly = false) => {
                 const now = new Date();
                 const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `bolsillo_sync_${stamp}.json`;
+                
+                if (isWeekly) {
+                    a.download = `bolsillo_backup_semanal_${stamp}.json`;
+                    localStorage.setItem(LAST_WEEKLY_BACKUP_KEY, now.toISOString());
+                    setToast('🛡️ Copia de seguridad semanal automática guardada');
+                } else {
+                    a.download = `bolsillo_sync_${stamp}.json`;
+                    if (manual) setToast('📤 Sincronizado a Descargas');
+                }
+                
                 a.click();
                 URL.revokeObjectURL(url);
                 setLastSyncAt(now.toISOString());
-                if (manual) setToast('📤 Sincronizado a Descargas');
             };
 
-            // Alias con el nombre anterior por compatibilidad interna
-            const exportMobileJson = () => exportSyncSnapshot(true);
+            const exportMobileJson = () => exportSyncSnapshot(true, false);
 
-            // Auto-sync: 2.5s después del último cambio en los gastos/presupuesto, sin tocar el móvil de nuevo
+            // Guardián Semanal Inteligente
             useEffect(() => {
-                if (!hasHydrated.current) { hasHydrated.current = true; return; }
-                const timer = setTimeout(() => {
-                    exportSyncSnapshot(false);
-                }, 2500);
-                return () => clearTimeout(timer);
-            }, [data.expenses, data.presupuestoMioMensual, data.budgetReset]);
+                if (!hasHydrated.current) { 
+                    hasHydrated.current = true; 
+                    const lastBackupStr = localStorage.getItem(LAST_WEEKLY_BACKUP_KEY);
+                    
+                    if (!lastBackupStr) {
+                        localStorage.setItem(LAST_WEEKLY_BACKUP_KEY, new Date().toISOString());
+                    } else {
+                        const diffDays = (new Date() - new Date(lastBackupStr)) / (1000 * 60 * 60 * 24);
+                        if (diffDays >= 7 && data.expenses.length > 0) {
+                            setTimeout(() => exportSyncSnapshot(false, true), 2000);
+                        }
+                    }
+                }
+            }, [data.expenses.length]);
 
-            // ---------- IMPORTAR / FUSIONAR (desde el móvil de empresa u otro backup) ----------
             const handleImportFile = (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -792,7 +796,6 @@
                 e.target.value = '';
             };
 
-            // ---------- EXPORTAR CSV ----------
             const exportCSV = () => {
                 if (data.expenses.length === 0) {
                     setToast('⚠️ No hay gastos para exportar');
@@ -812,7 +815,6 @@
                 setToast('📤 CSV exportado!');
             };
 
-            // ---------- EDITAR BANCO ----------
             const handleEditBanco = () => {
                 const nuevoBanco = prompt('Nombre del banco:', data.banco);
                 if (nuevoBanco && nuevoBanco.trim()) {
@@ -821,12 +823,10 @@
                 }
             };
 
-            // ---------- TOGGLE TEMA ----------
             const toggleTheme = () => {
                 setTheme(prev => prev === 'dark' ? 'light' : 'dark');
             };
 
-            // ---------- PRESUPUESTO SEMANAL CON DETALLE DE ROLLOVER ----------
             const presupuestoSemanal = useMemo(() => {
                 const hoy = new Date();
                 const cycleStartStr = data.budgetReset?.date || null;
@@ -958,7 +958,6 @@
                         </div>
                     )}
 
-                    {/* Modal de Bienvenida de Voz */}
                     {!voiceGuideShown && ReactDOM.createPortal(
                         <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                             <div className="bg-[#0f111a] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl animate-fade text-center relative overflow-hidden">
@@ -979,7 +978,7 @@
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-indigo-400 text-sm">💬</span>
-                                        <span className="text-slate-300 text-sm">"comida 25"</span>
+                                        <span className="text-slate-300 text-sm">"15 euros gasolina"</span>
                                     </div>
                                 </div>
                                 <div className="text-xs text-slate-400 space-y-2 text-left mb-6">
@@ -1001,7 +1000,6 @@
                         document.body
                     )}
 
-                    {/* CABECERA LIMPIA */}
                     <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-md gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
                             <div>
@@ -1031,7 +1029,7 @@
                             <button onClick={() => importInputRef.current?.click()} title="Importar gastos de otro móvil sin perder los tuyos" className="bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
                                 <i className="fa-solid fa-file-arrow-up"></i>
                             </button>
-                            <button onClick={exportMobileJson} title="Forzar sincronización ahora" className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
+                            <button onClick={exportMobileJson} title="Copia de seguridad manual" className="bg-indigo-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
                                 <i className="fa-solid fa-file-arrow-down"></i> PC
                             </button>
                             <button onClick={exportCSV} className="bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
@@ -1041,7 +1039,6 @@
                     </div>
 
                     <div className="flex flex-col gap-4">
-                    {/* HERO: único número que importa */}
                     <div ref={el => cardRefs.current['hero'] = el} style={{ order: liveCardOrder.indexOf('hero') }} className={`transition-transform duration-150 ${draggingCard === 'hero' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
                         <div onPointerDown={(e) => cardDrag.onPointerDown('hero', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
                             <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
@@ -1074,7 +1071,6 @@
                     </div>
                     </div>
 
-                    {/* Restante del mes completo con BASE EDITABLE */}
                     <div ref={el => cardRefs.current['restante'] = el} style={{ order: liveCardOrder.indexOf('restante') }} className={`transition-transform duration-150 ${draggingCard === 'restante' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
                         <div onPointerDown={(e) => cardDrag.onPointerDown('restante', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
                             <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
@@ -1120,7 +1116,6 @@
                     </div>
                     </div>
 
-                    {/* Ciclo de 30 días: chips visuales */}
                     <div ref={el => cardRefs.current['ciclo'] = el} style={{ order: liveCardOrder.indexOf('ciclo') }} className={`transition-transform duration-150 ${draggingCard === 'ciclo' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
                         <div onPointerDown={(e) => cardDrag.onPointerDown('ciclo', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
                             <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
@@ -1160,7 +1155,6 @@
                     </div>
                     </div>
 
-                    {/* Categorías: donut + leyenda */}
                     <div ref={el => cardRefs.current['categorias'] = el} style={{ order: liveCardOrder.indexOf('categorias') }} className={`transition-transform duration-150 ${draggingCard === 'categorias' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
                         <div onPointerDown={(e) => cardDrag.onPointerDown('categorias', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
                             <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
@@ -1222,7 +1216,6 @@
                     </div>
                     </div>
 
-                    {/* Movimientos */}
                     <div ref={el => cardRefs.current['movimientos'] = el} style={{ order: liveCardOrder.indexOf('movimientos') }} className={`transition-transform duration-150 ${draggingCard === 'movimientos' ? 'scale-[1.02] shadow-2xl relative z-20' : ''}`}>
                         <div onPointerDown={(e) => cardDrag.onPointerDown('movimientos', e)} className="drag-handle flex justify-center py-1 -mb-1 cursor-grab active:cursor-grabbing touch-none">
                             <i className="fa-solid fa-grip-lines text-slate-600 text-[11px]"></i>
@@ -1261,7 +1254,6 @@
                     </div>
                     </div>
 
-                    {/* Modales (sin cambios) */}
                     {selectedCategoryModal && ReactDOM.createPortal(
                         <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                             <div className="bg-[#0f111a] border border-white/10 p-6 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
