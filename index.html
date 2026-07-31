@@ -127,17 +127,18 @@
             lastWeekRecalc: null,
             banco: 'ING',
             cardOrder: ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'],
-            categoryOrder: ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Casa', 'Otros']
+            categoryOrder: ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Combustible', 'Casa', 'Otros']
         };
 
         const CARD_IDS = ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'];
 
-        const CATEGORIAS_GASTO = ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Casa', 'Otros'];
+        const CATEGORIAS_GASTO = ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Combustible', 'Casa', 'Otros'];
         const COLORES_CATEGORIA = {
             'Ocio': '#818cf8',
             'Alimentación': '#34d399',
             'Gasolina Moto': '#06b6d4',
             'Gasoil Coche': '#fbbf24',
+            'Combustible': '#a855f7', /* Púrpura elegante para genérico */
             'Casa': '#f43f5e',
             'Otros': '#94a3b8',
             'Transporte': '#fbbf24'
@@ -611,6 +612,8 @@
                                 autoCategory = 'Gasolina Moto';
                             } else if (transcript.includes('gasoil') || transcript.includes('diésel') || transcript.includes('diesel')) {
                                 autoCategory = 'Gasoil Coche';
+                            } else if (transcript.includes('combustible')) {
+                                autoCategory = 'Combustible';
                             }
                             
                             return {
@@ -721,7 +724,6 @@
                 }
             };
 
-            // ---------- SYNC MANUAL Y BACKUP SEMANAL ----------
             const exportSyncSnapshot = (manual = false, isWeekly = false) => {
                 const now = new Date();
                 const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -746,7 +748,6 @@
 
             const exportMobileJson = () => exportSyncSnapshot(true, false);
 
-            // Guardián Semanal Inteligente
             useEffect(() => {
                 if (!hasHydrated.current) { 
                     hasHydrated.current = true; 
@@ -978,7 +979,7 @@
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-indigo-400 text-sm">💬</span>
-                                        <span className="text-slate-300 text-sm">"15 euros gasolina"</span>
+                                        <span className="text-slate-300 text-sm">"15 euros combustible"</span>
                                     </div>
                                 </div>
                                 <div className="text-xs text-slate-400 space-y-2 text-left mb-6">
