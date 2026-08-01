@@ -180,12 +180,14 @@
             return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         };
 
+        const CICLO_DIAS = 28;
+
         const getFinancialCycleWeeks = (startDateStr) => {
             const start = startDateStr ? new Date(startDateStr) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
             start.setHours(0,0,0,0);
             
             const end = new Date(start);
-            end.setDate(end.getDate() + 29);
+            end.setDate(end.getDate() + (CICLO_DIAS - 1));
             end.setHours(23,59,59,999);
 
             const getWeekName = (date) => {
@@ -263,6 +265,9 @@
             const [tempBase, setTempBase] = useState(data.presupuestoMioMensual);
             const [toast, setToast] = useState(null);
             const [selectedCategoryModal, setSelectedCategoryModal] = useState(null);
+            const [showCreator, setShowCreator] = useState(false);
+            const [showGuide, setShowGuide] = useState(false);
+            const [guideTab, setGuideTab] = useState('ciclo');
             
             const [isListening, setIsListening] = useState(false);
             const [voiceGuideShown, setVoiceGuideShown] = useState(() => {
@@ -833,7 +838,6 @@
                 const cycleStartStr = data.budgetReset?.date || null;
                 const activeBase = data.presupuestoMioMensual; 
                 const weeks = getFinancialCycleWeeks(cycleStartStr);
-                const budgetPerDay = activeBase / 30;
 
                 const semanasConDatos = weeks.map((w, idx) => {
                     const expensesInWeek = data.expenses.filter(e => {
@@ -843,22 +847,36 @@
                         return d >= startTime && d <= endTime;
                     });
                     const totalGastos = expensesInWeek.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
-                    const presupuestoBase = w.days * budgetPerDay;
-                    return { ...w, presupuestoBase, totalGastos };
+                    return { ...w, totalGastos };
                 });
 
-                let acumulado = 0;
-                const semanasConRollover = semanasConDatos.map((w) => {
-                    const disponible = acumulado + w.presupuestoBase;
-                    const nuevoRemanente = disponible - w.totalGastos;
-                    const ajuste = acumulado;
-                    acumulado = nuevoRemanente;
+                // REAJUSTE: reparto plano. Las semanas YA CERRADAS (antes de hoy) se muestran con
+                // su reparto ideal original, solo a título informativo — no se recalculan. Lo que
+                // de verdad importa es la semana actual y las que quedan: se coge el saldo REAL que
+                // queda del ciclo (presupuesto total menos lo ya gastado en semanas pasadas) y se
+                // reparte de forma proporcional a los días entre la semana actual y las futuras, en
+                // un único cálculo (no en cascada), así nunca puede sumar más del dinero que
+                // realmente tienes.
+                const totalDiasCiclo = semanasConDatos.reduce((acc, w) => acc + w.days, 0);
+                const indexActualProvisional = semanasConDatos.findIndex(w =>
+                    hoy.getTime() >= new Date(w.startChunk).setHours(0,0,0,0) &&
+                    hoy.getTime() <= new Date(w.endChunk).setHours(23,59,59,999)
+                );
+                const indexActual0 = indexActualProvisional === -1 ? 0 : indexActualProvisional;
+                const gastadoEnSemanasPasadas = semanasConDatos.slice(0, indexActual0).reduce((acc, w) => acc + w.totalGastos, 0);
+                const diasFuturos = semanasConDatos.slice(indexActual0).reduce((acc, w) => acc + w.days, 0);
+                const saldoParaRepartir = activeBase - gastadoEnSemanasPasadas;
+
+                const semanasConRollover = semanasConDatos.map((w, idx) => {
+                    const presupuestoBase = idx < indexActual0
+                        ? (totalDiasCiclo > 0 ? activeBase * (w.days / totalDiasCiclo) : 0)
+                        : (diasFuturos > 0 ? saldoParaRepartir * (w.days / diasFuturos) : 0);
+                    const nuevoRemanente = presupuestoBase - w.totalGastos;
                     return { 
                         ...w, 
-                        disponible, 
+                        disponible: presupuestoBase, 
                         nuevoRemanente,
-                        ajuste,
-                        presupuestoReal: w.presupuestoBase + ajuste
+                        presupuestoReal: presupuestoBase
                     };
                 });
 
@@ -884,7 +902,8 @@
                     .reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
 
                 const presupuestoRealActual = semanaActual ? semanaActual.presupuestoReal : 0;
-                const remanenteAcumulado = semanaActual ? semanaActual.ajuste : 0;
+                const idealPlanoSemanaActual = (semanaActual && totalDiasCiclo > 0) ? activeBase * (semanaActual.days / totalDiasCiclo) : 0;
+                const remanenteAcumulado = presupuestoRealActual - idealPlanoSemanaActual;
                 const gastosSemanaActual = semanaActual ? semanaActual.totalGastos : 0;
                 const disponibleAhora = presupuestoRealActual - gastosSemanaActual;
 
@@ -1007,7 +1026,7 @@
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <h1 className="text-lg font-black text-white tracking-tight">Mi Bolsillo</h1>
                                     <span className={`total-hoy text-[12px] font-bold px-2 py-1 rounded-full ${gastoHoy > 0 ? 'bg-rose-500/30 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400'}`}>
-                                        Hoy: {gastoHoy.toFixed(1)}€
+                                        Hoy: {gastoHoy.toFixed(2)}€
                                     </span>
                                     <span 
                                         onClick={handleEditBanco}
@@ -1052,7 +1071,7 @@
                                     {disponibleAhora >= 0 ? '' : '−'}{Math.abs(disponibleAhora).toFixed(2)}€
                                 </p>
                                 <p className="text-[12px] text-slate-400 mt-1">
-                                    {remanenteAcumulado >= 0 ? `Incluye +${remanenteAcumulado.toFixed(0)}€` : `Incluye ${remanenteAcumulado.toFixed(0)}€`} de semanas anteriores · presupuesto de esta semana {presupuestoRealActual.toFixed(0)}€
+                                    {remanenteAcumulado >= 0 ? `Incluye +${remanenteAcumulado.toFixed(2)}€` : `Incluye ${remanenteAcumulado.toFixed(2)}€`} de semanas anteriores · presupuesto de esta semana {presupuestoRealActual.toFixed(2)}€
                                 </p>
                             </div>
                             <button 
@@ -1086,7 +1105,7 @@
                                         onClick={() => { setIsEditingBase(true); setTempBase(data.presupuestoMioMensual); }}
                                         className="text-sm font-bold text-white hover:text-indigo-400 transition-colors flex items-center gap-1"
                                     >
-                                        {data.presupuestoMioMensual.toFixed(0)}€
+                                        {data.presupuestoMioMensual.toFixed(2)}€
                                         <i className="fa-solid fa-pen text-[11px] text-slate-400"></i>
                                     </button>
                                 ) : (
@@ -1143,8 +1162,8 @@
                                     <div key={idx} className={`shrink-0 w-28 p-3 rounded-2xl border ${esActual ? 'bg-indigo-500/10 border-indigo-500/40' : 'bg-black/30 border-white/5'}`}>
                                         <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">{w.name}</p>
                                         <p className="text-[11px] text-slate-400 mb-1.5">{w.startChunk.getDate()}/{w.startChunk.getMonth()+1} - {w.endChunk.getDate()}/{w.endChunk.getMonth()+1}</p>
-                                        <p className={`text-sm font-black ${excedida ? 'text-rose-400' : 'text-white'}`}>{w.presupuestoReal.toFixed(0)}€</p>
-                                        <p className="text-[11px] text-slate-400">gastado {w.totalGastos.toFixed(0)}€</p>
+                                        <p className={`text-sm font-black ${excedida ? 'text-rose-400' : 'text-white'}`}>{w.presupuestoReal.toFixed(2)}€</p>
+                                        <p className="text-[11px] text-slate-400">gastado {w.totalGastos.toFixed(2)}€</p>
                                         <div className="h-1 w-full bg-black/40 rounded-full overflow-hidden mt-1.5">
                                             <div className={`h-full ${excedida ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${w.presupuestoReal > 0 ? Math.min(100, (w.totalGastos / w.presupuestoReal) * 100) : 100}%` }}></div>
                                         </div>
@@ -1188,7 +1207,7 @@
                                     ) : null}
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                    <span className="text-xs font-black text-white">{totalGastadoCiclo.toFixed(0)}€</span>
+                                    <span className="text-xs font-black text-white">{totalGastadoCiclo.toFixed(2)}€</span>
                                     <span className="text-[11px] text-slate-400 uppercase tracking-wider">Gastado</span>
                                 </div>
                             </div>
@@ -1208,7 +1227,7 @@
                                                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORES_CATEGORIA[cat] }}></span>
                                                 <span className="text-slate-300 font-medium group-hover:text-white underline-offset-4 group-hover:underline">{cat}</span>
                                             </div>
-                                            <span className="font-bold text-white cursor-pointer" onClick={() => setSelectedCategoryModal(cat)}>{amount.toFixed(0)}€</span>
+                                            <span className="font-bold text-white cursor-pointer" onClick={() => setSelectedCategoryModal(cat)}>{amount.toFixed(2)}€</span>
                                         </div>
                                     );
                                 })}
@@ -1254,6 +1273,88 @@
                     </div>
                     </div>
                     </div>
+
+                    <div className="mt-2 flex justify-center pb-2">
+                        <button onClick={() => setShowCreator(true)} className="flex flex-col items-center gap-2 text-slate-600 hover:text-indigo-400 transition-colors group">
+                            <i className="fa-solid fa-fingerprint text-xl group-hover:scale-110 transition-transform"></i>
+                            <span className="text-[9px] font-black uppercase tracking-widest">Creador</span>
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => setShowGuide(true)}
+                        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-2xl flex items-center justify-center transition-colors"
+                        title="Guía de usuario"
+                    >
+                        <i className="fa-solid fa-circle-question text-xl"></i>
+                    </button>
+
+                    {showCreator && ReactDOM.createPortal(
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                            <div className="bg-[#0f111a] border border-white/10 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade text-center relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
+                                <div className="w-20 h-20 mx-auto bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10 shadow-[0_0_30px_rgba(79,70,229,0.2)]">
+                                    <i className="fa-solid fa-code text-3xl text-indigo-400"></i>
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-2">El Hilván</h3>
+                                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                                    Software de gestión patrimonial desarrollado y diseñado exclusivamente por <br/>
+                                    <strong className="text-white">Jonathan Pérez Galán</strong>.<br/><br/>
+                                    Todos los derechos reservados.
+                                </p>
+                                <button onClick={() => setShowCreator(false)} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all">
+                                    CERRAR
+                                </button>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {showGuide && ReactDOM.createPortal(
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                            <div className="bg-[#0f111a] border border-white/10 rounded-[2rem] w-full max-w-2xl shadow-2xl animate-fade max-h-[85vh] flex flex-col overflow-hidden">
+                                <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10 shrink-0">
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                        <i className="fa-solid fa-circle-question text-indigo-400"></i> Guía de Usuario
+                                    </h3>
+                                    <button onClick={() => setShowGuide(false)} className="text-slate-400 p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
+                                </div>
+
+                                <div className="flex gap-2 px-6 pt-4 flex-wrap shrink-0">
+                                    {[
+                                        { id: 'ciclo', label: 'Ciclo', icon: 'fa-rotate' },
+                                        { id: 'gastos', label: 'Gastos', icon: 'fa-receipt' }
+                                    ].map(t => (
+                                        <button key={t.id} onClick={() => setGuideTab(t.id)}
+                                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${guideTab === t.id ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
+                                            <i className={`fa-solid ${t.icon}`}></i> {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="px-6 py-5 overflow-y-auto custom-scrollbar text-sm text-slate-300 leading-relaxed space-y-3">
+                                    {guideTab === 'ciclo' && (
+                                        <>
+                                            <h4 className="text-white font-black text-base">Cómo funciona el ciclo</h4>
+                                            <p>Tu presupuesto dura <span className="text-white font-bold">28 días</span> desde el día en que le das a "Reiniciar Ciclo" — normalmente el día que cobras. Dentro de esos 28 días, las semanas se alinean al <span className="text-white font-bold">calendario real (lunes a domingo)</span>: si reinicias un sábado, el primer bloque es corto (hasta el domingo) y luego cada semana empieza el lunes, como es natural.</p>
+                                            <p><span className="text-white font-bold">Reajuste automático:</span> lo que de verdad te queda del ciclo (presupuesto total menos lo ya gastado en semanas pasadas) se reparte entre los días que faltan. Si una semana gastas menos de lo previsto, la siguiente sube. Si gastas más, baja — para que nunca te quedes sin dinero antes de que acabe el ciclo.</p>
+                                            <p>El mensaje "Incluye +X€ / −X€ de semanas anteriores" te indica si esta semana tiene más o menos presupuesto de lo normal por cómo has ido de las semanas anteriores.</p>
+                                            <p>Si cobras en una fecha distinta cada mes, no pasa nada: pulsa "Reiniciar Ciclo" el día que efectivamente cobres, y el ciclo se cuenta desde ahí.</p>
+                                        </>
+                                    )}
+                                    {guideTab === 'gastos' && (
+                                        <>
+                                            <h4 className="text-white font-black text-base">Registrar gastos</h4>
+                                            <p>Pulsa el botón <span className="text-white font-bold">"GASTO"</span> (o el micrófono 🎙️ para dictarlo por voz) para añadir un gasto rápido: concepto, importe, categoría, ámbito (Individual o Común) y fecha.</p>
+                                            <p>Toca cualquier categoría para ver el desglose de gastos individuales y en común de ese ciclo.</p>
+                                            <p>Usa <span className="text-white font-bold">PC</span> para hacer una copia de seguridad manual, el botón de subir archivo para importar gastos de otro móvil sin perder los tuyos, y CSV para exportar el registro completo.</p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
 
                     {selectedCategoryModal && ReactDOM.createPortal(
                         <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
