@@ -122,9 +122,12 @@
 
         const DEFAULT_DATA = {
             presupuestoMioMensual: 439.12,
+            presupuestoOriginalMes: 439.12,
+            gastadoRecalibrado: 0,
             budgetReset: null,
             expenses: [],
             lastWeekRecalc: null,
+            reajustes: [],
             banco: 'ING',
             cardOrder: ['hero', 'restante', 'ciclo', 'categorias', 'movimientos'],
             categoryOrder: ['Ocio', 'Alimentación', 'Gasolina Moto', 'Gasoil Coche', 'Combustible', 'Casa', 'Otros']
@@ -158,6 +161,13 @@
                     const parsed = JSON.parse(saved);
                     if (!parsed.lastWeekRecalc) parsed.lastWeekRecalc = null;
                     if (!parsed.banco) parsed.banco = 'ING';
+                    // Migración: si no existe todavía el presupuesto original del mes (versión
+                    // anterior a esta función), se usa el saldo actual como mejor aproximación.
+                    if (typeof parsed.presupuestoOriginalMes !== 'number') {
+                        parsed.presupuestoOriginalMes = typeof parsed.presupuestoMioMensual === 'number' ? parsed.presupuestoMioMensual : DEFAULT_DATA.presupuestoMioMensual;
+                    }
+                    if (typeof parsed.gastadoRecalibrado !== 'number') parsed.gastadoRecalibrado = 0;
+                    if (!Array.isArray(parsed.reajustes)) parsed.reajustes = [];
                     parsed.cardOrder = sanitizeOrder(parsed.cardOrder, CARD_IDS);
                     parsed.categoryOrder = sanitizeOrder(parsed.categoryOrder, CATEGORIAS_GASTO);
                     return parsed;
@@ -456,6 +466,10 @@
                 saveData(data);
             }, [data]);
 
+            // Recalcula el saldo restante descontando SOLO lo gastado desde la última vez que se
+            // recalculó (no todo lo del ciclo otra vez), y solo cuando cambia la semana de TU
+            // ciclo de 28 días (no la semana natural del calendario). Deja siempre un registro
+            // en "reajustes" con lo que pasó, para poder mirar atrás.
             const recalcularBloques = (manual = false) => {
                 const resetDate = data.budgetReset?.date;
                 if (!resetDate) {
@@ -464,28 +478,49 @@
                 }
 
                 const hoy = new Date();
-                const semanaActual = getWeekNumber(hoy);
+                const weeks = getFinancialCycleWeeks(resetDate);
+                const idxEncontrado = weeks.findIndex(w =>
+                    hoy.getTime() >= new Date(w.startChunk).setHours(0,0,0,0) &&
+                    hoy.getTime() <= new Date(w.endChunk).setHours(23,59,59,999)
+                );
+                const semanaActualIdx = idxEncontrado === -1 ? weeks.length - 1 : idxEncontrado;
                 const ultimaSemanaRecalc = data.lastWeekRecalc;
 
-                if (ultimaSemanaRecalc === semanaActual && !manual) {
+                if (ultimaSemanaRecalc === semanaActualIdx && !manual) {
                     return false;
                 }
 
                 const totalGastado = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
-                const presupuestoRestante = Math.max(0, data.presupuestoMioMensual - totalGastado);
+                const gastadoRecalibradoPrev = data.gastadoRecalibrado || 0;
+                const gastadoNuevo = Math.max(0, totalGastado - gastadoRecalibradoPrev);
 
-                if (presupuestoRestante <= 0) {
-                    if (manual) setToast('💰 Presupuesto agotado');
+                if (gastadoNuevo <= 0) {
+                    setData(prev => ({ ...prev, lastWeekRecalc: semanaActualIdx }));
+                    if (manual) setToast('ℹ️ No hay gasto nuevo que recalcular');
                     return false;
                 }
 
+                const saldoAntes = data.presupuestoMioMensual;
+                const saldoDespues = Math.max(0, saldoAntes - gastadoNuevo);
+
+                const nuevoReajuste = {
+                    fecha: hoy.toISOString(),
+                    saldoAntes,
+                    saldoDespues,
+                    gastadoDesdeUltimoRecalculo: gastadoNuevo,
+                    gastadoTotalCiclo: totalGastado,
+                    motivo: manual ? 'Recálculo manual' : 'Cambio de semana'
+                };
+
                 setData(prev => ({
                     ...prev,
-                    presupuestoMioMensual: presupuestoRestante,
-                    lastWeekRecalc: semanaActual
+                    presupuestoMioMensual: saldoDespues,
+                    gastadoRecalibrado: totalGastado,
+                    lastWeekRecalc: semanaActualIdx,
+                    reajustes: [...(prev.reajustes || []), nuevoReajuste].slice(-30)
                 }));
 
-                if (manual) setToast('✅ Bloques actualizados');
+                if (manual) setToast(`✅ Recalculado: -${gastadoNuevo.toFixed(2)}€`);
                 return true;
             };
 
@@ -505,13 +540,16 @@
                     if (!window.confirm('¿Reiniciar ciclo? Se generará un backup de los gastos actuales.')) return;
                 }
 
+                const hoy = new Date();
+                const totalGastadoCicloAnterior = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+
                 if (data.expenses.length > 0) {
-                    const hoy = new Date();
                     const mesActual = hoy.toLocaleString('es', { month: 'long', year: 'numeric' });
                     const fileName = `cierre_ciclo_${mesActual.replace(/ /g, '_')}.json`;
                     
                     const backupData = {
                         fechaBackup: hoy.toISOString(),
+                        presupuestoOriginalMes: data.presupuestoOriginalMes,
                         presupuestoMioMensual: data.presupuestoMioMensual,
                         budgetReset: data.budgetReset,
                         expenses: data.expenses
@@ -527,14 +565,28 @@
                     setToast(`📁 Backup: ${fileName}`);
                 }
 
+                // Se deja constancia del cierre del ciclo anterior antes de perder sus gastos:
+                // cuánto quedaba del presupuesto original y cuánto se había gastado en total.
+                const cierreReajuste = {
+                    fecha: hoy.toISOString(),
+                    saldoAntes: data.presupuestoMioMensual,
+                    saldoDespues: data.presupuestoMioMensual,
+                    gastadoDesdeUltimoRecalculo: 0,
+                    gastadoTotalCiclo: totalGastadoCicloAnterior,
+                    motivo: `Reinicio de ciclo (presupuesto original era ${(data.presupuestoOriginalMes ?? data.presupuestoMioMensual).toFixed(2)}€)`
+                };
+
                 const newData = {
                     ...data,
                     budgetReset: {
-                        date: new Date().toISOString(),
+                        date: hoy.toISOString(),
                         base: data.presupuestoMioMensual
                     },
                     expenses: [],
-                    lastWeekRecalc: getWeekNumber(new Date())
+                    presupuestoOriginalMes: data.presupuestoMioMensual,
+                    gastadoRecalibrado: 0,
+                    lastWeekRecalc: 0,
+                    reajustes: [...(data.reajustes || []), cierreReajuste].slice(-30)
                 };
                 setData(newData);
                 setToast('✅ Ciclo reiniciado');
@@ -721,7 +773,24 @@
             const handleSaveBase = () => {
                 const val = parseFloat(tempBase);
                 if (!isNaN(val) && val >= 0) {
-                    setData(prev => ({ ...prev, presupuestoMioMensual: val }));
+                    const cicloRecienEmpezado = data.expenses.length === 0;
+                    const nuevoReajuste = {
+                        fecha: new Date().toISOString(),
+                        saldoAntes: data.presupuestoMioMensual,
+                        saldoDespues: val,
+                        gastadoDesdeUltimoRecalculo: 0,
+                        gastadoTotalCiclo: 0,
+                        motivo: 'Edición manual del saldo'
+                    };
+                    setData(prev => ({
+                        ...prev,
+                        presupuestoMioMensual: val,
+                        // Si el ciclo todavía no tiene gastos, este número ES el presupuesto
+                        // original del mes; si ya llevas gastos, es solo un ajuste de reparto
+                        // y el original no se toca (para que "restante del mes" siga siendo real).
+                        ...(cicloRecienEmpezado ? { presupuestoOriginalMes: val } : {}),
+                        reajustes: [...(prev.reajustes || []), nuevoReajuste].slice(-30)
+                    }));
                     setIsEditingBase(false);
                     setToast('✅ Presupuesto actualizado');
                 } else {
@@ -882,9 +951,10 @@
 
                 let semanaActual = semanasConRollover.find(w => hoy.getTime() >= new Date(w.startChunk).setHours(0,0,0,0) && hoy.getTime() <= new Date(w.endChunk).setHours(23,59,59,999)) || semanasConRollover[0];
 
+                const presupuestoOriginal = typeof data.presupuestoOriginalMes === 'number' ? data.presupuestoOriginalMes : activeBase;
                 const totalGastadoCiclo = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
-                const restanteTotalMes = activeBase - totalGastadoCiclo;
-                const porcentajeUsadoMes = activeBase > 0 ? Math.min(100, (totalGastadoCiclo / activeBase) * 100) : 0;
+                const restanteTotalMes = presupuestoOriginal - totalGastadoCiclo;
+                const porcentajeUsadoMes = presupuestoOriginal > 0 ? Math.min(100, (totalGastadoCiclo / presupuestoOriginal) * 100) : 0;
 
                 const porCategoria = {};
                 CATEGORIAS_GASTO.forEach(cat => {
@@ -893,8 +963,7 @@
                         .reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
                 });
                 
-                const semanaNumActual = getWeekNumber(hoy);
-                const ajustePendiente = data.lastWeekRecalc !== null && data.lastWeekRecalc !== semanaNumActual;
+                const ajustePendiente = data.lastWeekRecalc !== null && data.lastWeekRecalc !== indexActual0;
 
                 const hoyStr = hoy.toISOString().slice(0,10);
                 const gastoHoy = data.expenses
@@ -922,7 +991,7 @@
                     remanenteAcumulado,
                     gastosSemanaActual
                 };
-            }, [data.expenses, data.presupuestoMioMensual, data.budgetReset, data.lastWeekRecalc]);
+            }, [data.expenses, data.presupuestoMioMensual, data.presupuestoOriginalMes, data.budgetReset, data.lastWeekRecalc]);
 
             const { 
                 semanas, 
@@ -939,6 +1008,24 @@
                 remanenteAcumulado,
                 gastosSemanaActual
             } = presupuestoSemanal;
+
+            // Semanas a mostrar en la tarjeta "Ciclo de 30 Días": se ocultan las que ya han
+            // terminado (siguen existiendo por debajo para el rollover, solo no se pintan).
+            // Si no queda ninguna semana futura del ciclo, se añade una tarjeta de "propina"
+            // con la semana natural siguiente, solo de fecha, que no cuenta para nada.
+            const hoyInicioDia = new Date();
+            hoyInicioDia.setHours(0,0,0,0);
+            const semanasVisibles = semanas.filter(w => new Date(w.endChunk).getTime() >= hoyInicioDia.getTime());
+            let proximaSemanaPreview = null;
+            if (semanas.length > 0 && semanasVisibles.length <= 1) {
+                const ultima = semanas[semanas.length - 1];
+                const inicioPreview = new Date(ultima.endChunk);
+                inicioPreview.setDate(inicioPreview.getDate() + 1);
+                inicioPreview.setHours(0,0,0,0);
+                const finPreview = new Date(inicioPreview);
+                finPreview.setDate(finPreview.getDate() + 6);
+                proximaSemanaPreview = { startChunk: inicioPreview, endChunk: finPreview };
+            }
 
             const radius = 40;
             const circumference = 2 * Math.PI * radius;
@@ -1150,12 +1237,17 @@
                                     </span>
                                 )}
                             </div>
-                            <button onClick={handleResetCycle} className="text-[11px] text-rose-400 font-bold border border-rose-500/20 bg-rose-500/10 px-2 py-1 rounded-lg active:scale-95 transition-transform">
-                                <i className="fa-solid fa-rotate-left mr-1"></i>Reiniciar
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                                <button onClick={() => recalcularBloques(true)} className="text-[11px] text-indigo-400 font-bold border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 rounded-lg active:scale-95 transition-transform">
+                                    <i className="fa-solid fa-arrows-rotate mr-1"></i>Recalcular
+                                </button>
+                                <button onClick={handleResetCycle} className="text-[11px] text-rose-400 font-bold border border-rose-500/20 bg-rose-500/10 px-2 py-1 rounded-lg active:scale-95 transition-transform">
+                                    <i className="fa-solid fa-rotate-left mr-1"></i>Reiniciar
+                                </button>
+                            </div>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                            {semanas.map((w, idx) => {
+                            {semanasVisibles.map((w, idx) => {
                                 const esActual = semanaActual && w.startChunk.getTime() === semanaActual.startChunk.getTime();
                                 const excedida = w.totalGastos > w.presupuestoReal;
                                 return (
@@ -1171,7 +1263,27 @@
                                     </div>
                                 );
                             })}
+                            {proximaSemanaPreview && (
+                                <div className="shrink-0 w-28 p-3 rounded-2xl border border-dashed border-white/10 bg-black/10">
+                                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider truncate">Próxima</p>
+                                    <p className="text-[11px] text-slate-500 mb-1.5">{proximaSemanaPreview.startChunk.getDate()}/{proximaSemanaPreview.startChunk.getMonth()+1} - {proximaSemanaPreview.endChunk.getDate()}/{proximaSemanaPreview.endChunk.getMonth()+1}</p>
+                                    <p className="text-[11px] text-slate-600 mt-2">Fuera del ciclo actual</p>
+                                </div>
+                            )}
                         </div>
+                        {data.reajustes && data.reajustes.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-white/5">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1.5">Últimos reajustes</p>
+                                <div className="space-y-1">
+                                    {[...data.reajustes].slice(-3).reverse().map((r, i) => (
+                                        <div key={i} className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-500 truncate mr-2">{formatFechaAmigable(r.fecha.slice(0,10))} · {r.motivo}</span>
+                                            <span className="text-slate-300 font-bold shrink-0">{r.saldoDespues.toFixed(2)}€</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     </div>
 
@@ -1340,6 +1452,9 @@
                                             <p><span className="text-white font-bold">Reajuste automático:</span> lo que de verdad te queda del ciclo (presupuesto total menos lo ya gastado en semanas pasadas) se reparte entre los días que faltan. Si una semana gastas menos de lo previsto, la siguiente sube. Si gastas más, baja — para que nunca te quedes sin dinero antes de que acabe el ciclo.</p>
                                             <p>El mensaje "Incluye +X€ / −X€ de semanas anteriores" te indica si esta semana tiene más o menos presupuesto de lo normal por cómo has ido de las semanas anteriores.</p>
                                             <p>Si cobras en una fecha distinta cada mes, no pasa nada: pulsa "Reiniciar Ciclo" el día que efectivamente cobres, y el ciclo se cuenta desde ahí.</p>
+                                            <p><span className="text-white font-bold">Restante del mes completo</span> es siempre el presupuesto con el que arrancaste el ciclo (fijado al reiniciarlo) menos todo lo gastado — no cambia aunque se recalculen las semanas, así que siempre refleja la realidad.</p>
+                                            <p><span className="text-white font-bold">Botón "Recalcular":</span> si una semana se te va de presupuesto por algo imprevisto, no hace falta reiniciar el ciclo entero. Pulsa "Recalcular" y se ajusta el reparto de lo que queda con los datos reales, sin borrar tus gastos ni el histórico. Cada vez que se recalcula (a mano o automático al cambiar de semana) queda un registro debajo de las semanas, con fecha y motivo, para que puedas mirar atrás y ver qué pasó.</p>
+                                            <p>Las semanas ya terminadas dejan de verse en la tarjeta del ciclo (siguen contando por detrás para el reparto). Cuando ya no queda ninguna semana futura del ciclo, aparece una tarjeta de "Próxima" con solo las fechas — un adelanto de la semana que viene, que todavía no cuenta para nada.</p>
                                         </>
                                     )}
                                     {guideTab === 'gastos' && (
