@@ -1653,6 +1653,9 @@
                 if (Math.abs(dy) < SWIPE_GLOBAL_THRESHOLD || Math.abs(dy) < Math.abs(dx) * 1.5) return;
 
                 if (dy > 0) {
+                    // FIX: Si el movimiento es casi totalmente vertical, permitimos el scroll normal
+                    if (Math.abs(dx) < 30) return;
+
                     // Swipe hacia abajo: solo cuenta si ya estabas arriba del todo,
                     // para no interferir con el scroll normal hacia abajo del contenido.
                     if (start.scrollYAtStart <= 5) {
