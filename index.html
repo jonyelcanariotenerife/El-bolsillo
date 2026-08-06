@@ -135,95 +135,74 @@
             };
 
             // ---- Sync (FASE 7) ----------------------------------------------------
-            // Cliente WebSocket que sigue el protocolo ya implementado en El Hilván
-            // (PC = servidor, Bolsillo = cliente). Un único intento de conexión por
-            // llamada; el que la usa (la UI) decide cuándo reintentar.
-            //
-            // onStatus(status, extra) se llama en cada paso, con status uno de:
-            //   'connecting' | 'auth_fail' | 'syncing' | 'success' | 'error' | 'closed'
+            // Cliente HTTP que se conecta al servidor local de El Hilván.
             function syncWithPC(ip, port, pin, localData, onStatus) {
                 let settled = false;
-                let ws;
+                const controller = new AbortController();
 
-                try {
-                    ws = new WebSocket(`ws://${ip}:${port}`);
-                } catch (e) {
-                    logger.error('No se pudo abrir el WebSocket', e);
-                    onStatus('error', 'No se pudo iniciar la conexión (¿IP/puerto válidos?)');
-                    return { cancel: () => {} };
-                }
-
+                // Damos 35 segundos de margen (El Hilván corta a los 30s por seguridad si hay conflictos sin resolver)
                 const timeout = setTimeout(() => {
                     if (!settled) {
                         logger.warn('Timeout esperando respuesta del PC');
-                        onStatus('error', 'El PC no respondió a tiempo. ¿Estáis en la misma red WiFi?');
-                        try { ws.close(); } catch (e) {}
+                        onStatus('error', 'El PC no respondió a tiempo. ¿Estás resolviendo algún conflicto en la pantalla de El Hilván?');
+                        controller.abort();
                     }
-                }, 15000);
+                }, 35000);
 
                 onStatus('connecting');
+                logger.info('Conectando al PC via HTTP POST...');
 
-                ws.onopen = () => {
-                    logger.info('Conectado al PC, enviando PIN...');
-                    ws.send(JSON.stringify({ type: 'auth', payload: { pin, deviceName: 'Bolsillo' } }));
-                };
-
-                ws.onmessage = (event) => {
-                    let msg;
+                fetch(`http://${ip}:${port}/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin, deviceName: 'Bolsillo', syncData: localData }),
+                    signal: controller.signal
+                })
+                .then(async response => {
+                    settled = true;
+                    clearTimeout(timeout);
+                    
+                    let data;
                     try {
-                        msg = JSON.parse(event.data);
+                        data = await response.json();
                     } catch (e) {
-                        logger.error('Mensaje del PC no es JSON válido', e);
+                        onStatus('error', 'La respuesta del PC no es válida.');
                         return;
                     }
-
-                    switch (msg.type) {
-                        case 'auth_ok':
-                            logger.info('PIN correcto, enviando datos locales...');
-                            onStatus('syncing');
-                            ws.send(JSON.stringify({ type: 'sync_data', payload: localData }));
-                            break;
-
-                        case 'auth_fail':
-                            settled = true;
-                            clearTimeout(timeout);
-                            logger.warn('PIN incorrecto', msg.payload?.error);
-                            onStatus('auth_fail', msg.payload?.error || 'PIN incorrecto');
-                            ws.close();
-                            break;
-
-                        case 'sync_result':
-                            settled = true;
-                            clearTimeout(timeout);
-                            logger.info('Sincronización completada');
-                            onStatus('success', msg.payload);
-                            ws.close();
-                            break;
-
-                        default:
-                            logger.warn('Tipo de mensaje desconocido del PC:', msg.type);
+                    
+                    if (response.ok && data.success) {
+                        logger.info('Sincronización completada');
+                        // El Hilván nos devuelve los datos ya fusionados
+                        onStatus('success', data.mergedData);
+                    } else if (response.status === 401) {
+                        logger.warn('PIN incorrecto', data.error);
+                        onStatus('auth_fail', data.error || 'PIN incorrecto');
+                    } else {
+                        logger.error('Error del servidor:', data.error);
+                        onStatus('error', data.error || 'Error al procesar los datos en el PC');
                     }
-                };
-
-                ws.onerror = (err) => {
-                    logger.error('Error de WebSocket', err);
+                })
+                .catch(err => {
                     if (!settled) {
                         settled = true;
                         clearTimeout(timeout);
-                        onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
+                        if (err.name === 'AbortError') {
+                            onStatus('error', 'Tiempo de espera agotado.');
+                        } else {
+                            logger.error('Error de red HTTP', err);
+                            onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
+                        }
                     }
-                };
-
-                ws.onclose = () => {
-                    clearTimeout(timeout);
-                    if (!settled) {
-                        settled = true;
-                        onStatus('error', 'Se cerró la conexión antes de terminar.');
-                    }
-                };
+                });
 
                 return {
-                    cancel: () => { try { ws.close(); } catch (e) {} }
+                    cancel: () => {
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timeout);
+                            controller.abort();
+                        }
+                    }
                 };
             }
 
@@ -1593,8 +1572,7 @@
              *     o vertical mirando qué eje domina en los primeros píxeles — si gana el
              *     vertical, se suelta el gesto y el scroll de la lista sigue nativo.
              *  2) Globales en la pantalla principal: swipe ↓ con el scroll arriba del todo
-             *     abre "nuevo gasto"; swipe ↑ lleva al resumen del ciclo/semanas que ya
-             *     existe como tarjeta (no hace falta una vista nueva).
+             *     abre "nuevo gasto".
              * ========================================================================== */
             const SWIPE_ROW_THRESHOLD = 80;   // px para disparar borrar/editar al soltar
             const SWIPE_ROW_MAX = 110;        // px máximo de arrastre visual
@@ -1654,7 +1632,7 @@
                 setSwipeState({ id: null, dx: 0 });
             };
 
-            // Gestos globales en la pantalla principal (nuevo gasto / ir al resumen).
+            // Gestos globales en la pantalla principal (nuevo gasto).
             const SWIPE_GLOBAL_THRESHOLD = 70;
             const mainTouchRef = useRef(null);
             const anyModalOpen = modalOpen || showSettings || showSyncModal || showCreator || showGuide || !!selectedCategoryModal;
@@ -1680,15 +1658,6 @@
                     if (start.scrollYAtStart <= 5) {
                         triggerFeedback('click');
                         handleOpenAdd();
-                    }
-                } else {
-                    // Swipe hacia arriba: lleva al resumen del ciclo (tarjeta "Ciclo de 30 Días").
-                    const el = cardRefs.current['ciclo'];
-                    if (el) {
-                        triggerFeedback('click');
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        el.classList.add('ring-2', 'ring-indigo-400/60');
-                        setTimeout(() => el.classList.remove('ring-2', 'ring-indigo-400/60'), 900);
                     }
                 }
             };
