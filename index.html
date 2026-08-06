@@ -135,95 +135,74 @@
             };
 
             // ---- Sync (FASE 7) ----------------------------------------------------
-            // Cliente WebSocket que sigue el protocolo ya implementado en El Hilván
-            // (PC = servidor, Bolsillo = cliente). Un único intento de conexión por
-            // llamada; el que la usa (la UI) decide cuándo reintentar.
-            //
-            // onStatus(status, extra) se llama en cada paso, con status uno de:
-            //   'connecting' | 'auth_fail' | 'syncing' | 'success' | 'error' | 'closed'
+            // Cliente HTTP que se conecta al servidor local de El Hilván.
             function syncWithPC(ip, port, pin, localData, onStatus) {
                 let settled = false;
-                let ws;
+                const controller = new AbortController();
 
-                try {
-                    ws = new WebSocket(`ws://${ip}:${port}`);
-                } catch (e) {
-                    logger.error('No se pudo abrir el WebSocket', e);
-                    onStatus('error', 'No se pudo iniciar la conexión (¿IP/puerto válidos?)');
-                    return { cancel: () => {} };
-                }
-
+                // Damos 35 segundos de margen (El Hilván corta a los 30s por seguridad si hay conflictos sin resolver)
                 const timeout = setTimeout(() => {
                     if (!settled) {
                         logger.warn('Timeout esperando respuesta del PC');
-                        onStatus('error', 'El PC no respondió a tiempo. ¿Estáis en la misma red WiFi?');
-                        try { ws.close(); } catch (e) {}
+                        onStatus('error', 'El PC no respondió a tiempo. ¿Estás resolviendo algún conflicto en la pantalla de El Hilván?');
+                        controller.abort();
                     }
-                }, 15000);
+                }, 35000);
 
                 onStatus('connecting');
+                logger.info('Conectando al PC via HTTP POST...');
 
-                ws.onopen = () => {
-                    logger.info('Conectado al PC, enviando PIN...');
-                    ws.send(JSON.stringify({ type: 'auth', payload: { pin, deviceName: 'Bolsillo' } }));
-                };
-
-                ws.onmessage = (event) => {
-                    let msg;
+                fetch(`http://${ip}:${port}/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin, deviceName: 'Bolsillo', syncData: localData }),
+                    signal: controller.signal
+                })
+                .then(async response => {
+                    settled = true;
+                    clearTimeout(timeout);
+                    
+                    let data;
                     try {
-                        msg = JSON.parse(event.data);
+                        data = await response.json();
                     } catch (e) {
-                        logger.error('Mensaje del PC no es JSON válido', e);
+                        onStatus('error', 'La respuesta del PC no es válida.');
                         return;
                     }
-
-                    switch (msg.type) {
-                        case 'auth_ok':
-                            logger.info('PIN correcto, enviando datos locales...');
-                            onStatus('syncing');
-                            ws.send(JSON.stringify({ type: 'sync_data', payload: localData }));
-                            break;
-
-                        case 'auth_fail':
-                            settled = true;
-                            clearTimeout(timeout);
-                            logger.warn('PIN incorrecto', msg.payload?.error);
-                            onStatus('auth_fail', msg.payload?.error || 'PIN incorrecto');
-                            ws.close();
-                            break;
-
-                        case 'sync_result':
-                            settled = true;
-                            clearTimeout(timeout);
-                            logger.info('Sincronización completada');
-                            onStatus('success', msg.payload);
-                            ws.close();
-                            break;
-
-                        default:
-                            logger.warn('Tipo de mensaje desconocido del PC:', msg.type);
+                    
+                    if (response.ok && data.success) {
+                        logger.info('Sincronización completada');
+                        // El Hilván nos devuelve los datos ya fusionados
+                        onStatus('success', data.mergedData);
+                    } else if (response.status === 401) {
+                        logger.warn('PIN incorrecto', data.error);
+                        onStatus('auth_fail', data.error || 'PIN incorrecto');
+                    } else {
+                        logger.error('Error del servidor:', data.error);
+                        onStatus('error', data.error || 'Error al procesar los datos en el PC');
                     }
-                };
-
-                ws.onerror = (err) => {
-                    logger.error('Error de WebSocket', err);
+                })
+                .catch(err => {
                     if (!settled) {
                         settled = true;
                         clearTimeout(timeout);
-                        onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
+                        if (err.name === 'AbortError') {
+                            onStatus('error', 'Tiempo de espera agotado.');
+                        } else {
+                            logger.error('Error de red HTTP', err);
+                            onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
+                        }
                     }
-                };
-
-                ws.onclose = () => {
-                    clearTimeout(timeout);
-                    if (!settled) {
-                        settled = true;
-                        onStatus('error', 'Se cerró la conexión antes de terminar.');
-                    }
-                };
+                });
 
                 return {
-                    cancel: () => { try { ws.close(); } catch (e) {} }
+                    cancel: () => {
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timeout);
+                            controller.abort();
+                        }
+                    }
                 };
             }
 
@@ -255,11 +234,98 @@
                 }
             }
 
-            return { logger, storage, syncWithPC, widget: { sync: syncHomeScreenWidget, dataKey: WIDGET_DATA_KEY } };
+            // ---- Sincronización directa con la Calculadora de Nómina (deep link) --
+            // Alternativa más directa al JSON exportado/importado a mano: usamos un
+            // intent-filter con esquema personalizado (calculadora://sincronizar) para
+            // que Android despierte a la Calculadora y nos pase el "Saldo para gastar
+            // al mes" ya calculado, vía bolsillo://sincronizar. Fuera de Android nativo
+            // estas funciones no hacen nada (no rompen la app en el navegador).
+            const CALC_SYNC_CACHE_KEY = 'bolsillo_last_calc_sync';
+            const CALC_SYNC_FRESH_MS = 30 * 60 * 1000; // 30 min: pasado eso, ya no se considera "reciente"
+
+            function isNativePlatform() {
+                return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+            }
+            function getAppPlugin() {
+                return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) || null;
+            }
+
+            function getUltimaSincronizacionCalculadora() {
+                try {
+                    const raw = localStorage.getItem(CALC_SYNC_CACHE_KEY);
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    if (typeof parsed.saldo !== 'number' || !parsed.at) return null;
+                    return parsed;
+                } catch (e) { return null; }
+            }
+            function guardarUltimaSincronizacionCalculadora(saldo) {
+                try {
+                    localStorage.setItem(CALC_SYNC_CACHE_KEY, JSON.stringify({ saldo, at: new Date().toISOString() }));
+                } catch (e) {}
+            }
+            function esSincronizacionReciente(sync) {
+                if (!sync) return false;
+                const edadMs = Date.now() - new Date(sync.at).getTime();
+                return edadMs >= 0 && edadMs <= CALC_SYNC_FRESH_MS;
+            }
+
+            // Registra el listener que recibe bolsillo://sincronizar?datos=&auto=
+            // cuando la Calculadora nos abre (ya sea porque el usuario editó el saldo
+            // allí, o porque le pedimos el dato con abrirCalculadoraYPedirSaldo).
+            // onDatos(saldo, { auto }) se llama con el valor recibido.
+            function escucharSincronizacionDesdeCalculadora(onDatos) {
+                if (!isNativePlatform()) return;
+                const App = getAppPlugin();
+                if (!App || !App.addListener) return;
+                App.addListener('appUrlOpen', (data) => {
+                    try {
+                        const url = new URL(data.url);
+                        if (url.protocol !== 'bolsillo:') return;
+                        const esRutaSincronizar = url.hostname === 'sincronizar' || url.pathname.replace(/^\/+/, '') === 'sincronizar';
+                        if (!esRutaSincronizar) return;
+                        const datosParam = url.searchParams.get('datos');
+                        if (!datosParam) return;
+                        const payload = JSON.parse(decodeURIComponent(datosParam));
+                        if (typeof payload.saldo !== 'number') return;
+                        guardarUltimaSincronizacionCalculadora(payload.saldo);
+                        onDatos && onDatos(payload.saldo, { auto: url.searchParams.get('auto') === '1' });
+                    } catch (e) {
+                        logger.error('No se pudo leer la sincronización entrante de la Calculadora', e);
+                    }
+                });
+            }
+
+            // Abre la Calculadora pidiéndole el saldo actual (fallback del botón
+            // manual cuando no hay una sincronización reciente en caché). La
+            // Calculadora responde sola y nos devuelve el foco.
+            async function abrirCalculadoraYPedirSaldo() {
+                if (!isNativePlatform()) return false;
+                const App = getAppPlugin();
+                if (!App || !App.openUrl) return false;
+                try {
+                    await App.openUrl({ url: 'calculadora://sincronizar?solicita=1' });
+                    return true;
+                } catch (e) {
+                    logger.warn('No se pudo abrir la Calculadora (¿está instalada?)', e);
+                    return false;
+                }
+            }
+
+            return {
+                logger, storage, syncWithPC,
+                widget: { sync: syncHomeScreenWidget, dataKey: WIDGET_DATA_KEY },
+                calcSync: {
+                    getUltima: getUltimaSincronizacionCalculadora,
+                    esReciente: esSincronizacionReciente,
+                    escuchar: escucharSincronizacionDesdeCalculadora,
+                    pedirACalculadora: abrirCalculadoraYPedirSaldo
+                }
+            };
         })();
 
         // Acceso corto para el resto del archivo (fases futuras usan esto):
-        const { logger, storage: BolsilloStorage, syncWithPC } = window.BolsilloServices;
+        const { logger, storage: BolsilloStorage, syncWithPC, calcSync } = window.BolsilloServices;
 
         /* ============================================================================
          * CONFIGURACIÓN Y CONSTANTES (config/)
@@ -824,6 +890,9 @@
 
             const [isEditingBase, setIsEditingBase] = useState(false);
             const [tempBase, setTempBase] = useState(data.presupuestoMioMensual);
+            // Sincronización con la Calculadora de Nómina (deep link)
+            const [ultimaSyncCalc, setUltimaSyncCalc] = useState(() => calcSync.getUltima());
+            const [sincronizandoConCalc, setSincronizandoConCalc] = useState(false);
             const [toast, setToast] = useState(null);
             const [selectedCategoryModal, setSelectedCategoryModal] = useState(null);
             const [showCreator, setShowCreator] = useState(false);
@@ -1118,77 +1187,6 @@
             useEffect(() => {
                 saveData(data);
             }, [data]);
-
-            // FASE 11 — Escuchar Deep Links (desde la Calculadora)
-            // Se ejecuta al cargar la app o cuando Capacitor intercepta una URL en segundo plano
-            useEffect(() => {
-                const procesarEnlace = (urlStr) => {
-                    try {
-                        const url = new URL(urlStr);
-                        if (url.protocol === 'bolsillo:' || urlStr.includes('datos=')) {
-                            const datosParam = url.searchParams.get('datos');
-                            if (datosParam) {
-                                const parsed = JSON.parse(decodeURIComponent(datosParam));
-                                if (parsed && parsed.ingresoNeto) {
-                                    const val = parseFloat(parsed.ingresoNeto);
-                                    if (!isNaN(val) && val >= 0) {
-                                        setData(prev => {
-                                            if (prev.presupuestoMioMensual === val) return prev;
-                                            
-                                            // Evaluamos si el ciclo está recién empezado mirando los gastos activos
-                                            const gastosActivos = prev.expenses ? prev.expenses.filter(e => !e.deletedAt) : [];
-                                            const cicloRecienEmpezado = gastosActivos.length === 0;
-                                            
-                                            const nuevoReajuste = {
-                                                fecha: new Date().toISOString(),
-                                                saldoAntes: prev.presupuestoMioMensual,
-                                                saldoDespues: val,
-                                                gastadoDesdeUltimoRecalculo: 0,
-                                                gastadoTotalCiclo: 0,
-                                                motivo: 'Sincronizado desde Calculadora'
-                                            };
-                                            
-                                            return {
-                                                ...prev,
-                                                presupuestoMioMensual: val,
-                                                ...(cicloRecienEmpezado ? { presupuestoOriginalMes: val } : {}),
-                                                reajustes: [...(prev.reajustes || []), nuevoReajuste].slice(-30)
-                                            };
-                                        });
-                                        setToast('✅ Saldo actualizado desde Calculadora');
-                                        
-                                        // Limpiamos la URL para que no vuelva a dispararse si se recarga la página
-                                        if (window.history.replaceState) {
-                                            window.history.replaceState({}, document.title, window.location.pathname);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        // Ignoramos errores de parseo silenciosamente para no molestar en un uso normal
-                    }
-                };
-
-                // 1. Revisamos si la app se abrió directamente con la URL 
-                if (window.location.href.includes('datos=')) {
-                    procesarEnlace(window.location.href);
-                }
-
-                // 2. Nos suscribimos al plugin App de Capacitor (para cuando el intent despierta la app ya abierta)
-                let listener = null;
-                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                    listener = window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
-                        procesarEnlace(data.url);
-                    });
-                }
-
-                return () => {
-                    if (listener && listener.remove) {
-                        listener.remove();
-                    }
-                };
-            }, []);
 
             // Recalcula el saldo restante descontando SOLO lo gastado desde la última vez que se
             // recalculó (no todo lo del ciclo otra vez), y solo cuando cambia la semana de TU
@@ -1653,7 +1651,6 @@
                 const t = e.changedTouches[0];
                 const dx = t.clientX - start.x;
                 const dy = t.clientY - start.y;
-                
                 if (Math.abs(dy) < SWIPE_GLOBAL_THRESHOLD || Math.abs(dy) < Math.abs(dx) * 1.5) return;
 
                 if (dy > 0) {
@@ -1663,10 +1660,16 @@
                         triggerFeedback('click');
                         handleOpenAdd();
                     }
+                } else {
+                    // Swipe hacia arriba: lleva al resumen del ciclo (tarjeta "Ciclo de 30 Días").
+                    const el = cardRefs.current['ciclo'];
+                    if (el) {
+                        triggerFeedback('click');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('ring-2', 'ring-indigo-400/60');
+                        setTimeout(() => el.classList.remove('ring-2', 'ring-indigo-400/60'), 900);
+                    }
                 }
-                // ELIMINADO: El swipe hacia arriba que forzaba el salto a la tarjeta 'ciclo'.
-                // Al hacer scroll normal hacia abajo, el dedo se mueve hacia arriba (dy < 0),
-                // lo que provocaba que la app secuestrara el scroll nativo.
             };
 
             const handleSaveBase = () => {
@@ -1695,6 +1698,57 @@
                 } else {
                     setToast('⚠️ Introduce un importe válido');
                 }
+            };
+
+            // Aplica un saldo recibido de la Calculadora de Nómina (por deep link)
+            // como nueva Base, con el mismo criterio que la edición manual: si el
+            // ciclo aún no tiene gastos, también fija el presupuesto original.
+            const handleSyncFromCalculadora = (val, { auto = true, silencioso = false } = {}) => {
+                if (typeof val !== 'number' || isNaN(val) || val < 0) return;
+                setData(prev => {
+                    const cicloRecienEmpezado = activeExpenses.length === 0;
+                    const nuevoReajuste = {
+                        fecha: new Date().toISOString(),
+                        saldoAntes: prev.presupuestoMioMensual,
+                        saldoDespues: val,
+                        gastadoDesdeUltimoRecalculo: 0,
+                        gastadoTotalCiclo: 0,
+                        motivo: 'Sincronizado desde la Calculadora de Nómina'
+                    };
+                    return {
+                        ...prev,
+                        presupuestoMioMensual: val,
+                        ...(cicloRecienEmpezado ? { presupuestoOriginalMes: val } : {}),
+                        reajustes: [...(prev.reajustes || []), nuevoReajuste].slice(-30)
+                    };
+                });
+                setUltimaSyncCalc(calcSync.getUltima());
+                setSincronizandoConCalc(false);
+                if (!silencioso) setToast('📲 Sincronizado con la Calculadora');
+            };
+
+            // Escucha en todo momento la llegada de datos desde la Calculadora
+            // (edición allí, o respuesta a nuestra petición con el botón manual).
+            useEffect(() => {
+                calcSync.escuchar((saldo, { auto }) => {
+                    handleSyncFromCalculadora(saldo, { auto });
+                });
+            }, []);
+
+            const handleSincronizarConCalculadora = async () => {
+                const ultima = calcSync.getUltima();
+                if (calcSync.esReciente(ultima)) {
+                    handleSyncFromCalculadora(ultima.saldo, { auto: false });
+                    return;
+                }
+                setSincronizandoConCalc(true);
+                const abierta = await calcSync.pedirACalculadora();
+                if (!abierta) {
+                    setSincronizandoConCalc(false);
+                    setToast('⚠️ No se pudo abrir la Calculadora (¿está instalada?)');
+                }
+                // Si se abrió correctamente, la Calculadora responderá sola vía
+                // appUrlOpen y handleSyncFromCalculadora aplicará el dato al volver.
             };
 
             const exportSyncSnapshot = (manual = false, isWeekly = false) => {
@@ -2348,6 +2402,20 @@
                         <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden mt-2">
                             <div className={`h-full transition-all duration-500 ${porcentajeUsadoMes >= 100 ? 'bg-rose-500' : porcentajeUsadoMes >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${porcentajeUsadoMes}%` }}></div>
                         </div>
+                        <button
+                            onClick={handleSincronizarConCalculadora}
+                            disabled={sincronizandoConCalc}
+                            title="Sincronizar por deep link con la Calculadora de Nómina"
+                            className="mt-3 w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 py-2 rounded-xl font-bold text-[11px] uppercase tracking-wide active:scale-[0.98] transition-all disabled:opacity-60"
+                        >
+                            <i className={`fa-solid ${sincronizandoConCalc ? 'fa-rotate fa-spin' : 'fa-calculator'}`}></i>
+                            {sincronizandoConCalc ? 'Sincronizando...' : 'Sincronizar con la Calculadora'}
+                            {!sincronizandoConCalc && ultimaSyncCalc && (
+                                <span className="text-slate-500 font-normal normal-case ml-1">
+                                    · {new Date(ultimaSyncCalc.at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            )}
+                        </button>
                     </div>
                     </div>
 
@@ -2826,7 +2894,8 @@
                                 <div className="flex gap-2 px-6 pt-4 flex-wrap shrink-0">
                                     {[
                                         { id: 'ciclo', label: 'Ciclo', icon: 'fa-rotate' },
-                                        { id: 'gastos', label: 'Gastos', icon: 'fa-receipt' }
+                                        { id: 'gastos', label: 'Gastos', icon: 'fa-receipt' },
+                                        { id: 'sincronizar', label: 'Sincronizar', icon: 'fa-arrows-rotate' }
                                     ].map(t => (
                                         <button key={t.id} onClick={() => setGuideTab(t.id)}
                                             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${guideTab === t.id ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
@@ -2854,6 +2923,19 @@
                                             <p>Pulsa el botón <span className="text-white font-bold">"GASTO"</span> (o el micrófono 🎙️ para dictarlo por voz) para añadir un gasto rápido: concepto, importe, categoría, ámbito (Individual o Común) y fecha.</p>
                                             <p>Toca cualquier categoría para ver el desglose de gastos individuales y en común de ese ciclo.</p>
                                             <p>Usa <span className="text-white font-bold">PC</span> para hacer una copia de seguridad manual, el botón de subir archivo para importar gastos de otro móvil sin perder los tuyos, y CSV para exportar el registro completo.</p>
+                                        </>
+                                    )}
+                                    {guideTab === 'sincronizar' && (
+                                        <>
+                                            <h4 className="text-white font-black text-base">Con la Calculadora de Nómina (automático)</h4>
+                                            <p>En la tarjeta <span className="text-white font-bold">"Restante del mes completo"</span>, junto al lápiz de edición manual de la Base, está el botón <span className="text-white font-bold">"Sincronizar con la Calculadora"</span>:</p>
+                                            <p>· Si tienes un dato reciente (de los últimos 30 min) recibido de la Calculadora, lo aplica al instante, sin abrir nada.</p>
+                                            <p>· Si no, abre la Calculadora un momento; ella responde sola con el saldo actual y te devuelve aquí automáticamente.</p>
+                                            <p>Además, no hace falta ni pulsar ese botón: cada vez que edites y guardes el concepto "Saldo para gastar al mes" en la Calculadora, la Base de aquí se actualiza sola.</p>
+                                            <p>El <span className="text-white font-bold">lápiz de edición manual</span> de la Base sigue funcionando exactamente igual que siempre, para pisar el valor a mano cuando lo necesites — la sincronización no lo sustituye, solo te ahorra tener que teclearlo.</p>
+                                            <h4 className="text-white font-black text-base pt-2">Con El Hilván (PC)</h4>
+                                            <p>El botón <span className="text-white font-bold">"Sincronizar por WiFi"</span> (icono de wifi, arriba) conecta con El Hilván en el PC mediante un PIN, para traer o llevar el histórico completo de gastos. Es un canal distinto al de la Calculadora: aquí se sincroniza todo el registro de movimientos, no solo la Base del mes.</p>
+                                            <p>Debajo del botón de sincronizar por WiFi verás las <span className="text-white font-bold">últimas sincronizaciones</span> realizadas, con fecha y hora.</p>
                                         </>
                                     )}
                                 </div>
