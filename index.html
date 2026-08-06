@@ -1119,6 +1119,77 @@
                 saveData(data);
             }, [data]);
 
+            // FASE 11 — Escuchar Deep Links (desde la Calculadora)
+            // Se ejecuta al cargar la app o cuando Capacitor intercepta una URL en segundo plano
+            useEffect(() => {
+                const procesarEnlace = (urlStr) => {
+                    try {
+                        const url = new URL(urlStr);
+                        if (url.protocol === 'bolsillo:' || urlStr.includes('datos=')) {
+                            const datosParam = url.searchParams.get('datos');
+                            if (datosParam) {
+                                const parsed = JSON.parse(decodeURIComponent(datosParam));
+                                if (parsed && parsed.ingresoNeto) {
+                                    const val = parseFloat(parsed.ingresoNeto);
+                                    if (!isNaN(val) && val >= 0) {
+                                        setData(prev => {
+                                            if (prev.presupuestoMioMensual === val) return prev;
+                                            
+                                            // Evaluamos si el ciclo está recién empezado mirando los gastos activos
+                                            const gastosActivos = prev.expenses ? prev.expenses.filter(e => !e.deletedAt) : [];
+                                            const cicloRecienEmpezado = gastosActivos.length === 0;
+                                            
+                                            const nuevoReajuste = {
+                                                fecha: new Date().toISOString(),
+                                                saldoAntes: prev.presupuestoMioMensual,
+                                                saldoDespues: val,
+                                                gastadoDesdeUltimoRecalculo: 0,
+                                                gastadoTotalCiclo: 0,
+                                                motivo: 'Sincronizado desde Calculadora'
+                                            };
+                                            
+                                            return {
+                                                ...prev,
+                                                presupuestoMioMensual: val,
+                                                ...(cicloRecienEmpezado ? { presupuestoOriginalMes: val } : {}),
+                                                reajustes: [...(prev.reajustes || []), nuevoReajuste].slice(-30)
+                                            };
+                                        });
+                                        setToast('✅ Saldo actualizado desde Calculadora');
+                                        
+                                        // Limpiamos la URL para que no vuelva a dispararse si se recarga la página
+                                        if (window.history.replaceState) {
+                                            window.history.replaceState({}, document.title, window.location.pathname);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Ignoramos errores de parseo silenciosamente para no molestar en un uso normal
+                    }
+                };
+
+                // 1. Revisamos si la app se abrió directamente con la URL 
+                if (window.location.href.includes('datos=')) {
+                    procesarEnlace(window.location.href);
+                }
+
+                // 2. Nos suscribimos al plugin App de Capacitor (para cuando el intent despierta la app ya abierta)
+                let listener = null;
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                    listener = window.Capacitor.Plugins.App.addListener('appUrlOpen', (data) => {
+                        procesarEnlace(data.url);
+                    });
+                }
+
+                return () => {
+                    if (listener && listener.remove) {
+                        listener.remove();
+                    }
+                };
+            }, []);
+
             // Recalcula el saldo restante descontando SOLO lo gastado desde la última vez que se
             // recalculó (no todo lo del ciclo otra vez), y solo cuando cambia la semana de TU
             // ciclo de 28 días (no la semana natural del calendario). Deja siempre un registro
