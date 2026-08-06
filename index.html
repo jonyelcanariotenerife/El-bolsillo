@@ -1653,6 +1653,7 @@
                 const t = e.changedTouches[0];
                 const dx = t.clientX - start.x;
                 const dy = t.clientY - start.y;
+                
                 if (Math.abs(dy) < SWIPE_GLOBAL_THRESHOLD || Math.abs(dy) < Math.abs(dx) * 1.5) return;
 
                 if (dy > 0) {
@@ -1662,16 +1663,10 @@
                         triggerFeedback('click');
                         handleOpenAdd();
                     }
-                } else {
-                    // Swipe hacia arriba: lleva al resumen del ciclo (tarjeta "Ciclo de 30 Días").
-                    const el = cardRefs.current['ciclo'];
-                    if (el) {
-                        triggerFeedback('click');
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        el.classList.add('ring-2', 'ring-indigo-400/60');
-                        setTimeout(() => el.classList.remove('ring-2', 'ring-indigo-400/60'), 900);
-                    }
                 }
+                // ELIMINADO: El swipe hacia arriba que forzaba el salto a la tarjeta 'ciclo'.
+                // Al hacer scroll normal hacia abajo, el dedo se mueve hacia arriba (dy < 0),
+                // lo que provocaba que la app secuestrara el scroll nativo.
             };
 
             const handleSaveBase = () => {
