@@ -135,74 +135,95 @@
             };
 
             // ---- Sync (FASE 7) ----------------------------------------------------
-            // Cliente HTTP que se conecta al servidor local de El Hilván.
+            // Cliente WebSocket que sigue el protocolo ya implementado en El Hilván
+            // (PC = servidor, Bolsillo = cliente). Un único intento de conexión por
+            // llamada; el que la usa (la UI) decide cuándo reintentar.
+            //
+            // onStatus(status, extra) se llama en cada paso, con status uno de:
+            //   'connecting' | 'auth_fail' | 'syncing' | 'success' | 'error' | 'closed'
             function syncWithPC(ip, port, pin, localData, onStatus) {
                 let settled = false;
-                const controller = new AbortController();
+                let ws;
 
-                // Damos 35 segundos de margen (El Hilván corta a los 30s por seguridad si hay conflictos sin resolver)
+                try {
+                    ws = new WebSocket(`ws://${ip}:${port}`);
+                } catch (e) {
+                    logger.error('No se pudo abrir el WebSocket', e);
+                    onStatus('error', 'No se pudo iniciar la conexión (¿IP/puerto válidos?)');
+                    return { cancel: () => {} };
+                }
+
                 const timeout = setTimeout(() => {
                     if (!settled) {
                         logger.warn('Timeout esperando respuesta del PC');
-                        onStatus('error', 'El PC no respondió a tiempo. ¿Estás resolviendo algún conflicto en la pantalla de El Hilván?');
-                        controller.abort();
+                        onStatus('error', 'El PC no respondió a tiempo. ¿Estáis en la misma red WiFi?');
+                        try { ws.close(); } catch (e) {}
                     }
-                }, 35000);
+                }, 15000);
 
                 onStatus('connecting');
-                logger.info('Conectando al PC via HTTP POST...');
 
-                fetch(`http://${ip}:${port}/sync`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pin, deviceName: 'Bolsillo', syncData: localData }),
-                    signal: controller.signal
-                })
-                .then(async response => {
-                    settled = true;
-                    clearTimeout(timeout);
-                    
-                    let data;
+                ws.onopen = () => {
+                    logger.info('Conectado al PC, enviando PIN...');
+                    ws.send(JSON.stringify({ type: 'auth', payload: { pin, deviceName: 'Bolsillo' } }));
+                };
+
+                ws.onmessage = (event) => {
+                    let msg;
                     try {
-                        data = await response.json();
+                        msg = JSON.parse(event.data);
                     } catch (e) {
-                        onStatus('error', 'La respuesta del PC no es válida.');
+                        logger.error('Mensaje del PC no es JSON válido', e);
                         return;
                     }
-                    
-                    if (response.ok && data.success) {
-                        logger.info('Sincronización completada');
-                        // El Hilván nos devuelve los datos ya fusionados
-                        onStatus('success', data.mergedData);
-                    } else if (response.status === 401) {
-                        logger.warn('PIN incorrecto', data.error);
-                        onStatus('auth_fail', data.error || 'PIN incorrecto');
-                    } else {
-                        logger.error('Error del servidor:', data.error);
-                        onStatus('error', data.error || 'Error al procesar los datos en el PC');
+
+                    switch (msg.type) {
+                        case 'auth_ok':
+                            logger.info('PIN correcto, enviando datos locales...');
+                            onStatus('syncing');
+                            ws.send(JSON.stringify({ type: 'sync_data', payload: localData }));
+                            break;
+
+                        case 'auth_fail':
+                            settled = true;
+                            clearTimeout(timeout);
+                            logger.warn('PIN incorrecto', msg.payload?.error);
+                            onStatus('auth_fail', msg.payload?.error || 'PIN incorrecto');
+                            ws.close();
+                            break;
+
+                        case 'sync_result':
+                            settled = true;
+                            clearTimeout(timeout);
+                            logger.info('Sincronización completada');
+                            onStatus('success', msg.payload);
+                            ws.close();
+                            break;
+
+                        default:
+                            logger.warn('Tipo de mensaje desconocido del PC:', msg.type);
                     }
-                })
-                .catch(err => {
+                };
+
+                ws.onerror = (err) => {
+                    logger.error('Error de WebSocket', err);
                     if (!settled) {
                         settled = true;
                         clearTimeout(timeout);
-                        if (err.name === 'AbortError') {
-                            onStatus('error', 'Tiempo de espera agotado.');
-                        } else {
-                            logger.error('Error de red HTTP', err);
-                            onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
-                        }
+                        onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
                     }
-                });
+                };
+
+                ws.onclose = () => {
+                    clearTimeout(timeout);
+                    if (!settled) {
+                        settled = true;
+                        onStatus('error', 'Se cerró la conexión antes de terminar.');
+                    }
+                };
 
                 return {
-                    cancel: () => {
-                        if (!settled) {
-                            settled = true;
-                            clearTimeout(timeout);
-                            controller.abort();
-                        }
-                    }
+                    cancel: () => { try { ws.close(); } catch (e) {} }
                 };
             }
 
