@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Quantum Finance · Bolsillo</title>
 
     <!-- PWA: manifest + iconos + colores de tema -->
@@ -26,59 +26,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800;900&display=swap" rel="stylesheet" />
 
     <style>
+        /* FASE 0 — Fix de tamaño de texto en WebView nativo:
+           Chromium (y el WebView de Android que usa Capacitor por debajo) intenta
+           "ayudar" a la legibilidad agrandando automáticamente el texto que considera
+           demasiado pequeño para el ancho de pantalla ("font boosting" / text autosizing).
+           Esto rompe toda la jerarquía visual pensada en rem/px, y es la causa casi
+           segura de que se vea desproporcionado en el móvil aunque en el navegador
+           normal se vea perfecto. Esta línea lo desactiva a nivel de motor de render. */
+        html { -webkit-text-size-adjust: 100%; -moz-text-size-adjust: 100%; text-size-adjust: 100%; }
+
         * { box-sizing: border-box; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020205; color: #e2e8f0; min-height: 100vh; padding-bottom: 40px; transition: background-color 0.3s, color 0.3s; }
-        /* Modo claro — paleta pastel cálida */
-        body.light-mode { background-color: #f4efe6; color: #2b2620; }
-        body.light-mode .bg-white\/5 { background-color: #efe8da; }
-        body.light-mode .border-white\/10 { border-color: rgba(43,38,32,0.1); }
-        body.light-mode .border-white\/5 { border-color: rgba(43,38,32,0.07); }
-        body.light-mode .bg-black\/30 { background-color: rgba(43,38,32,0.05); }
-        body.light-mode .bg-black\/40 { background-color: rgba(43,38,32,0.07); }
-        body.light-mode .bg-black\/50 { background-color: rgba(43,38,32,0.08); }
-        body.light-mode .text-slate-400 { color: #79725f; }
-        body.light-mode .text-slate-300 { color: #4a4436; }
-        body.light-mode .text-white { color: #2b2620; }
-        body.light-mode .bg-gradient-to-br { background: linear-gradient(135deg, #ece3f6 0%, #f1ebe0 100%); }
-        body.light-mode .border-indigo-500\/20 { border-color: rgba(124,110,201,0.25); }
-        body.light-mode .border-indigo-500\/30 { border-color: rgba(124,110,201,0.35); }
-        body.light-mode .border-indigo-500\/40 { border-color: rgba(124,110,201,0.4); }
-        body.light-mode .border-indigo-500\/50 { border-color: rgba(124,110,201,0.5); }
-
-        /* Acentos pastelizados */
-        body.light-mode .text-indigo-400, body.light-mode .text-indigo-300 { color: #6a5bc2; }
-        body.light-mode .text-rose-400 { color: #b8496a; }
-        body.light-mode .text-emerald-400, body.light-mode .text-emerald-300 { color: #3f9e78; }
-        body.light-mode .text-amber-400 { color: #b3823a; }
-
-        body.light-mode .bg-indigo-600 { background-color: #7c6ec9; }
-        body.light-mode .bg-indigo-600:hover { background-color: #6a5bc2; }
-        body.light-mode .bg-indigo-500 { background-color: #8b7fd1; }
-        body.light-mode .bg-emerald-600 { background-color: #4fac86; }
-        body.light-mode .bg-emerald-500 { background-color: #5cb891; }
-        body.light-mode .bg-rose-500 { background-color: #cf6b8a; }
-        body.light-mode .bg-amber-500 { background-color: #cf9e52; }
-        body.light-mode .bg-slate-700, body.light-mode .bg-slate-800, body.light-mode .bg-slate-900 { background-color: #e4dccb; color: #2b2620; }
-
-        body.light-mode .bg-indigo-500\/10 { background-color: rgba(124,110,201,0.1); }
-        body.light-mode .bg-indigo-500\/20 { background-color: rgba(124,110,201,0.16); }
-        body.light-mode .bg-indigo-500\/30 { background-color: rgba(124,110,201,0.2); }
-        body.light-mode .bg-indigo-900\/30 { background-color: rgba(124,110,201,0.1); }
-        body.light-mode .bg-rose-500\/10 { background-color: rgba(199,107,138,0.1); }
-        body.light-mode .bg-rose-500\/20 { background-color: rgba(199,107,138,0.16); }
-        body.light-mode .bg-rose-500\/30 { background-color: rgba(199,107,138,0.22); }
-        body.light-mode .bg-emerald-500\/20 { background-color: rgba(79,172,134,0.16); }
-        body.light-mode .bg-amber-500\/20 { background-color: rgba(179,130,58,0.16); }
-
-        /* Modales */
-        body.light-mode .bg-\[\#0f111a\] { background-color: #fbf8f2; border-color: rgba(43,38,32,0.1) !important; }
-        body.light-mode .bg-black\/80 { background-color: rgba(43,38,32,0.35); }
-
-        body.light-mode .toast { background: #fbf8f2; border-color: rgba(43,38,32,0.1); color: #2b2620; }
-        body.light-mode .theme-toggle { background: rgba(43,38,32,0.05); border-color: rgba(43,38,32,0.1); color: #2b2620; }
-        body.light-mode .btn-add { background: #ded5f2; color: #4a3f8f; border-color: rgba(43,38,32,0.08); }
-        body.light-mode input, body.light-mode select { background-color: rgba(43,38,32,0.03) !important; color: #2b2620 !important; }
-        body.light-mode input::placeholder { color: #9b927c; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020205; color: #e2e8f0; min-height: 100vh; padding-bottom: 40px; }
 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
@@ -92,7 +50,11 @@
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
         .week-grid { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 0.9fr 0.9fr 1fr; gap: 0.2rem 0.3rem; align-items: center; font-size: 0.7rem; }
         .week-grid .col-header { font-size: 0.6rem; text-transform: uppercase; font-weight: 800; color: #64748b; letter-spacing: 0.03em; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f111a; border: 1px solid rgba(255,255,255,0.1); padding: 12px 24px; border-radius: 16px; font-weight: 700; font-size: 0.8rem; z-index: 100; animation: fadeIn 0.3s ease-out; backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f111a; border: 1px solid rgba(255,255,255,0.1); border-left-width: 4px; padding: 12px 24px; border-radius: 16px; font-weight: 700; font-size: 0.8rem; z-index: 100; animation: fadeIn 0.3s ease-out; backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 92vw; }
+        .toast-success { border-left-color: #34d399; }
+        .toast-warning { border-left-color: #fbbf24; }
+        .toast-error   { border-left-color: #f87171; }
+        .toast-info    { border-left-color: #38bdf8; }
         .mic-btn { transition: all 0.3s ease; }
         .mic-btn.active { background: rgba(239, 68, 68, 0.3); border-color: rgba(239, 68, 68, 0.5); animation: pulse 1s ease-in-out infinite; }
         .mic-btn:hover { transform: scale(1.05); }
@@ -103,8 +65,6 @@
         .presupuesto-real small { font-size: 0.6rem; font-weight: 700; color: #94a3b8; }
         .banco-edit { cursor: pointer; transition: all 0.2s; }
         .banco-edit:hover { color: #818cf8; text-decoration: underline; }
-        .theme-toggle { cursor: pointer; transition: all 0.2s; font-size: 0.9rem; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
-        .theme-toggle:hover { background: rgba(255,255,255,0.1); }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; height: 100dvh; }
     </style>
 </head>
@@ -114,11 +74,204 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
+        /* ============================================================================
+         * SERVICIOS (services/)
+         * ----------------------------------------------------------------------------
+         * Al ser un único archivo HTML no podemos tener carpetas de verdad, así que
+         * organizamos el código nuevo en "módulos" claramente delimitados dentro de
+         * window.BolsilloServices. Cada fase futura (backups, sync, notificaciones...)
+         * añade su propio servicio aquí, en vez de mezclar lógica suelta dentro de los
+         * componentes de React. Así el core de la app (más abajo) queda limpio y las
+         * fases se pueden tocar de forma aislada.
+         * ========================================================================== */
+        window.BolsilloServices = (function () {
+
+            // ---- Logger ---------------------------------------------------------
+            // Logger simple con niveles, silenciable en producción. Sustituye a los
+            // console.log sueltos: así se puede desactivar todo de golpe, y queda
+            // rastro ordenado y con marca de tiempo al depurar con `adb logcat` o el
+            // panel Logcat de Android Studio mientras la app corre en el móvil.
+            const LOG_ENABLED = true; // pon esto a false para silenciar logs en producción
+            const LOG_PREFIX = '[Bolsillo]';
+
+            const logger = {
+                info: (...args) => { if (LOG_ENABLED) console.log(LOG_PREFIX, new Date().toISOString(), ...args); },
+                warn: (...args) => { if (LOG_ENABLED) console.warn(LOG_PREFIX, new Date().toISOString(), ...args); },
+                error: (...args) => { if (LOG_ENABLED) console.error(LOG_PREFIX, new Date().toISOString(), ...args); },
+            };
+
+            // ---- Storage ---------------------------------------------------------
+            // Envoltorio fino sobre localStorage con manejo de errores centralizado
+            // (por ejemplo, si el almacenamiento está lleno o corrupto), para que el
+            // resto del código no tenga que repetir try/catch en cada lectura/escritura.
+            const storage = {
+                get(key, fallback = null) {
+                    try {
+                        const raw = localStorage.getItem(key);
+                        return raw ? JSON.parse(raw) : fallback;
+                    } catch (e) {
+                        logger.error('storage.get falló para', key, e);
+                        return fallback;
+                    }
+                },
+                set(key, value) {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(value));
+                        return true;
+                    } catch (e) {
+                        logger.error('storage.set falló para', key, e);
+                        return false;
+                    }
+                },
+                remove(key) {
+                    try {
+                        localStorage.removeItem(key);
+                        return true;
+                    } catch (e) {
+                        logger.error('storage.remove falló para', key, e);
+                        return false;
+                    }
+                }
+            };
+
+            // ---- Sync (FASE 7) ----------------------------------------------------
+            // Cliente WebSocket que sigue el protocolo ya implementado en El Hilván
+            // (PC = servidor, Bolsillo = cliente). Un único intento de conexión por
+            // llamada; el que la usa (la UI) decide cuándo reintentar.
+            //
+            // onStatus(status, extra) se llama en cada paso, con status uno de:
+            //   'connecting' | 'auth_fail' | 'syncing' | 'success' | 'error' | 'closed'
+            function syncWithPC(ip, port, pin, localData, onStatus) {
+                let settled = false;
+                let ws;
+
+                try {
+                    ws = new WebSocket(`ws://${ip}:${port}`);
+                } catch (e) {
+                    logger.error('No se pudo abrir el WebSocket', e);
+                    onStatus('error', 'No se pudo iniciar la conexión (¿IP/puerto válidos?)');
+                    return { cancel: () => {} };
+                }
+
+                const timeout = setTimeout(() => {
+                    if (!settled) {
+                        logger.warn('Timeout esperando respuesta del PC');
+                        onStatus('error', 'El PC no respondió a tiempo. ¿Estáis en la misma red WiFi?');
+                        try { ws.close(); } catch (e) {}
+                    }
+                }, 15000);
+
+                onStatus('connecting');
+
+                ws.onopen = () => {
+                    logger.info('Conectado al PC, enviando PIN...');
+                    ws.send(JSON.stringify({ type: 'auth', payload: { pin, deviceName: 'Bolsillo' } }));
+                };
+
+                ws.onmessage = (event) => {
+                    let msg;
+                    try {
+                        msg = JSON.parse(event.data);
+                    } catch (e) {
+                        logger.error('Mensaje del PC no es JSON válido', e);
+                        return;
+                    }
+
+                    switch (msg.type) {
+                        case 'auth_ok':
+                            logger.info('PIN correcto, enviando datos locales...');
+                            onStatus('syncing');
+                            ws.send(JSON.stringify({ type: 'sync_data', payload: localData }));
+                            break;
+
+                        case 'auth_fail':
+                            settled = true;
+                            clearTimeout(timeout);
+                            logger.warn('PIN incorrecto', msg.payload?.error);
+                            onStatus('auth_fail', msg.payload?.error || 'PIN incorrecto');
+                            ws.close();
+                            break;
+
+                        case 'sync_result':
+                            settled = true;
+                            clearTimeout(timeout);
+                            logger.info('Sincronización completada');
+                            onStatus('success', msg.payload);
+                            ws.close();
+                            break;
+
+                        default:
+                            logger.warn('Tipo de mensaje desconocido del PC:', msg.type);
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    logger.error('Error de WebSocket', err);
+                    if (!settled) {
+                        settled = true;
+                        clearTimeout(timeout);
+                        onStatus('error', 'No se pudo conectar. Comprueba la IP, el puerto y que estéis en la misma WiFi.');
+                    }
+                };
+
+                ws.onclose = () => {
+                    clearTimeout(timeout);
+                    if (!settled) {
+                        settled = true;
+                        onStatus('error', 'Se cerró la conexión antes de terminar.');
+                    }
+                };
+
+                return {
+                    cancel: () => { try { ws.close(); } catch (e) {} }
+                };
+            }
+
+            // ---- Widget de pantalla de inicio (FASE 8) ---------------------------
+            // Empuja las cifras clave a un almacén que el widget nativo de Android
+            // puede leer directamente: @capacitor/preferences, que por debajo usa
+            // SharedPreferences (a diferencia de localStorage, SharedPreferences SÍ
+            // es accesible desde código nativo Kotlin/Java fuera del WebView).
+            // Además, si el plugin nativo "BolsilloWidget" está registrado, le
+            // pedimos un refresco inmediato: así el widget se actualiza al momento
+            // mientras la app está abierta, sin depender del intervalo mínimo de
+            // refresco que impone Android (~30 min) para el widgetInfo.xml.
+            // Si no corremos dentro de Capacitor (p. ej. probando en el navegador),
+            // esta función simplemente no hace nada.
+            const WIDGET_DATA_KEY = 'bolsillo_widget_data';
+
+            async function syncHomeScreenWidget(payload) {
+                if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+                try {
+                    const plugins = window.Capacitor.Plugins || {};
+                    if (plugins.Preferences) {
+                        await plugins.Preferences.set({ key: WIDGET_DATA_KEY, value: JSON.stringify(payload) });
+                    }
+                    if (plugins.BolsilloWidget && plugins.BolsilloWidget.refresh) {
+                        await plugins.BolsilloWidget.refresh();
+                    }
+                } catch (e) {
+                    logger.error('syncHomeScreenWidget falló', e);
+                }
+            }
+
+            return { logger, storage, syncWithPC, widget: { sync: syncHomeScreenWidget, dataKey: WIDGET_DATA_KEY } };
+        })();
+
+        // Acceso corto para el resto del archivo (fases futuras usan esto):
+        const { logger, storage: BolsilloStorage, syncWithPC } = window.BolsilloServices;
+
+        /* ============================================================================
+         * CONFIGURACIÓN Y CONSTANTES (config/)
+         * ========================================================================== */
         const STORAGE_KEY = 'quantum_pocket_mobile_data';
         const VOICE_GUIDE_SHOWN_KEY = 'quantum_voice_guide_shown';
-        const THEME_KEY = 'quantum_pocket_theme';
         const LAST_ACTIVITY_KEY = 'quantum_pocket_last_activity';
         const LAST_WEEKLY_BACKUP_KEY = 'quantum_pocket_last_weekly_backup';
+        // FASE 2 — Autocompletado inteligente de conceptos
+        const CONCEPTS_KEY = 'quantum_pocket_recent_concepts';
+        const CONCEPTS_MAX = 10;
+        const CONCEPTS_MAX_AGE_DAYS = 60; // ~2 meses
 
         const DEFAULT_DATA = {
             presupuestoMioMensual: 439.12,
@@ -146,6 +299,113 @@
             'Otros': '#94a3b8',
             'Transporte': '#fbbf24'
         };
+        // FASE 1 — Emojis por categoría, para identificación visual rápida
+        const EMOJIS_CATEGORIA = {
+            'Ocio': '🎮',
+            'Alimentación': '🍕',
+            'Gasolina Moto': '🏍️',
+            'Gasoil Coche': '🚗',
+            'Combustible': '⛽',
+            'Casa': '🏠',
+            'Otros': '📦',
+            'Transporte': '🚌'
+        };
+        const emojiCategoria = (cat) => EMOJIS_CATEGORIA[cat] || '📦';
+
+        /* ============================================================================
+         * FASE 3 — Feedback háptico y sonoro (hooks/services)
+         * Vibración (navigator.vibrate) y sonidos (Web Audio API) para confirmar
+         * acciones: guardar, eliminar, error. Todo configurable desde Ajustes.
+         * ========================================================================== */
+        const FEEDBACK_SETTINGS_KEY = 'quantum_pocket_feedback_settings';
+        const DEFAULT_FEEDBACK_SETTINGS = { vibrationEnabled: true, soundEnabled: true, vibrationIntensity: 'media' };
+
+        const loadFeedbackSettings = () => {
+            try {
+                const saved = localStorage.getItem(FEEDBACK_SETTINGS_KEY);
+                if (!saved) return { ...DEFAULT_FEEDBACK_SETTINGS };
+                return { ...DEFAULT_FEEDBACK_SETTINGS, ...JSON.parse(saved) };
+            } catch (e) {
+                logger.error('loadFeedbackSettings falló', e);
+                return { ...DEFAULT_FEEDBACK_SETTINGS };
+            }
+        };
+
+        const saveFeedbackSettings = (settings) => {
+            try {
+                localStorage.setItem(FEEDBACK_SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {
+                logger.error('saveFeedbackSettings falló', e);
+            }
+        };
+
+        // Multiplicador de intensidad de vibración (baja/media/alta).
+        const VIBRATION_INTENSITY_FACTOR = { baja: 0.5, media: 1, alta: 1.8 };
+
+        // Patrones base de vibración (ms) por tipo de acción.
+        const VIBRATION_PATTERNS = {
+            click: [15],
+            success: [25],
+            error: [35, 50, 35]
+        };
+
+        const getVibrationPattern = (type, intensity) => {
+            const factor = VIBRATION_INTENSITY_FACTOR[intensity] ?? 1;
+            const base = VIBRATION_PATTERNS[type] || VIBRATION_PATTERNS.click;
+            return base.map(ms => Math.max(5, Math.round(ms * factor)));
+        };
+
+        // Deduce el tipo de feedback (click/success/error) a partir del mensaje del
+        // toast, reutilizando los mismos emojis que ya usa getToastLevel (FASE 1).
+        const getFeedbackType = (message) => {
+            if (!message) return 'click';
+            const level = getToastLevel(message);
+            if (level === 'success') return 'success';
+            if (level === 'warning' || level === 'error') return 'error';
+            if (/^(🗑️|📁|📤|🛡️|📋)/.test(message)) return 'success';
+            return 'click';
+        };
+
+        // Reproduce un sonido corto con Web Audio API sobre un AudioContext ya creado.
+        const playFeedbackSound = (ctx, type) => {
+            if (!ctx) return;
+            const now = ctx.currentTime;
+            const playTone = (freq, start, duration, volume = 0.15, waveType = 'sine') => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = waveType;
+                osc.frequency.setValueAtTime(freq, now + start);
+                gain.gain.setValueAtTime(0, now + start);
+                gain.gain.linearRampToValueAtTime(volume, now + start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + start + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + start);
+                osc.stop(now + start + duration + 0.02);
+            };
+            if (type === 'success') {
+                playTone(523.25, 0, 0.1);       // Do
+                playTone(783.99, 0.09, 0.15);   // Sol
+            } else if (type === 'error') {
+                playTone(220, 0, 0.12, 0.14, 'square');
+                playTone(160, 0.1, 0.18, 0.14, 'square');
+            } else {
+                playTone(880, 0, 0.06, 0.1);    // click
+            }
+        };
+
+        // FASE 1 — Sistema de toasts con 4 niveles. Todos los mensajes de la app YA
+        // empiezan de forma consistente con un emoji (✅ ⚠️ 🔔 📁 ℹ️...), así que en vez
+        // de tocar los ~30 sitios que llaman a setToast(...), inferimos el nivel a
+        // partir de ese emoji. Resultado: mismo código de siempre, toasts con color.
+        const getToastLevel = (message) => {
+            if (!message) return 'info';
+            if (message.startsWith('✅')) return 'success';
+            if (message.startsWith('⚠️')) {
+                return /error|denegad|inválid|no válido/i.test(message) ? 'error' : 'warning';
+            }
+            return 'info';
+        };
 
         const sanitizeOrder = (saved, canonical) => {
             if (!Array.isArray(saved)) return [...canonical];
@@ -168,18 +428,91 @@
                     }
                     if (typeof parsed.gastadoRecalibrado !== 'number') parsed.gastadoRecalibrado = 0;
                     if (!Array.isArray(parsed.reajustes)) parsed.reajustes = [];
+                    // FASE 7 — Limpieza de tombstones viejos: un gasto borrado hace más de
+                    // 60 días ya ha tenido de sobra tiempo de sincronizarse con El Hilván;
+                    // lo quitamos del todo para no acumular basura para siempre.
+                    if (Array.isArray(parsed.expenses)) {
+                        const LIMITE_MS = 60 * 24 * 60 * 60 * 1000;
+                        const ahora = Date.now();
+                        parsed.expenses = parsed.expenses.filter(ex => {
+                            if (!ex.deletedAt) return true;
+                            return (ahora - new Date(ex.deletedAt).getTime()) < LIMITE_MS;
+                        });
+                    }
                     parsed.cardOrder = sanitizeOrder(parsed.cardOrder, CARD_IDS);
                     parsed.categoryOrder = sanitizeOrder(parsed.categoryOrder, CATEGORIAS_GASTO);
+                    logger.info('Datos cargados correctamente', `(${(parsed.expenses || []).length} gastos)`);
                     return parsed;
                 }
-            } catch (e) {}
+                logger.info('No había datos guardados, se usa DEFAULT_DATA');
+            } catch (e) {
+                logger.error('loadData falló, se usa DEFAULT_DATA', e);
+            }
             return JSON.parse(JSON.stringify(DEFAULT_DATA));
         };
 
         const saveData = (dataToSave) => {
             try { 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave)); 
-            } catch (e) {}
+            } catch (e) {
+                logger.error('saveData falló (¿almacenamiento lleno?)', e);
+            }
+        };
+
+        /* ============================================================================
+         * FASE 2 — Autocompletado inteligente de conceptos (hooks/services)
+         * Guarda en localStorage los últimos conceptos únicos usados, con fecha de
+         * último uso, para sugerirlos en el campo "Concepto" del modal de gasto.
+         * ========================================================================== */
+        const loadConcepts = () => {
+            try {
+                const saved = localStorage.getItem(CONCEPTS_KEY);
+                if (!saved) return [];
+                const parsed = JSON.parse(saved);
+                if (!Array.isArray(parsed)) return [];
+                return parsed.filter(c => c && typeof c.name === 'string' && typeof c.lastUsed === 'string');
+            } catch (e) {
+                logger.error('loadConcepts falló', e);
+                return [];
+            }
+        };
+
+        const saveConcepts = (concepts) => {
+            try {
+                localStorage.setItem(CONCEPTS_KEY, JSON.stringify(concepts));
+            } catch (e) {
+                logger.error('saveConcepts falló (¿almacenamiento lleno?)', e);
+            }
+        };
+
+        // Limpia conceptos con más de CONCEPTS_MAX_AGE_DAYS días sin uso.
+        const cleanOldConcepts = (concepts) => {
+            const LIMITE_MS = CONCEPTS_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+            const ahora = Date.now();
+            return concepts.filter(c => (ahora - new Date(c.lastUsed).getTime()) < LIMITE_MS);
+        };
+
+        // Ordena por fecha de último uso, más reciente primero.
+        const sortConceptsByRecency = (concepts) => {
+            return [...concepts].sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
+        };
+
+        // Registra el uso de un concepto: si ya existe (sin distinguir mayúsculas),
+        // actualiza su fecha; si no, lo añade. Mantiene como máximo CONCEPTS_MAX.
+        const registerConceptUsage = (name) => {
+            const trimmed = (name || '').trim();
+            if (!trimmed) return;
+            const now = new Date().toISOString();
+            let concepts = cleanOldConcepts(loadConcepts());
+            const idx = concepts.findIndex(c => c.name.toLowerCase() === trimmed.toLowerCase());
+            if (idx >= 0) {
+                concepts[idx] = { name: trimmed, lastUsed: now };
+            } else {
+                concepts.push({ name: trimmed, lastUsed: now });
+            }
+            concepts = sortConceptsByRecency(concepts).slice(0, CONCEPTS_MAX);
+            saveConcepts(concepts);
+            return concepts;
         };
 
         const getWeekNumber = (date) => {
@@ -258,8 +591,223 @@
             return `${fecha.getDate()} ${fecha.toLocaleString('es', { month: 'short' })}`;
         };
 
+        /* ============================================================================
+         * FASE 4 — Validación en tiempo real del formulario de gastos
+         * Reglas: Nombre obligatorio (mín. 2 caracteres), Importe número positivo,
+         * Fecha no futura. Pensado para reutilizarse en futuros formularios
+         * (préstamos, ahorros, etc.) siguiendo la misma forma { campo: 'mensaje' }.
+         * ========================================================================== */
+        const validateExpenseForm = (formData) => {
+            const errors = { name: '', amount: '', fecha: '' };
+
+            const name = (formData.name || '').trim();
+            if (!name) {
+                errors.name = 'El concepto es obligatorio';
+            } else if (name.length < 2) {
+                errors.name = 'Mínimo 2 caracteres';
+            }
+
+            if (formData.amount === '' || formData.amount === null || formData.amount === undefined) {
+                errors.amount = 'El importe es obligatorio';
+            } else {
+                const amountNum = parseFloat(formData.amount);
+                if (isNaN(amountNum) || amountNum <= 0) {
+                    errors.amount = 'Debe ser un número positivo';
+                }
+            }
+
+            if (!formData.fecha) {
+                errors.fecha = 'La fecha es obligatoria';
+            } else {
+                // Comparación por día (YYYY-MM-DD), sin líos de horas/husos horarios.
+                const hoyStr = new Date().toISOString().slice(0, 10);
+                if (formData.fecha > hoyStr) {
+                    errors.fecha = 'No puede ser una fecha futura';
+                }
+            }
+
+            return errors;
+        };
+
+        const isExpenseFormValid = (errors) => !errors.name && !errors.amount && !errors.fecha;
+
+        /* ============================================================================
+         * FASE 5 — Compartir gastos
+         * Formatea el mensaje de texto que se comparte (Web Share API) o se copia
+         * al portapapeles cuando la Web Share API no está disponible.
+         * ========================================================================== */
+        const formatShareText = (exp, banco) => {
+            return [
+                '💰 GASTO COMPARTIDO',
+                `Concepto: ${exp.name}`,
+                `Importe: ${parseFloat(exp.amount).toFixed(2)}€`,
+                `Categoría: ${emojiCategoria(exp.category)} ${exp.category || 'Otros'}`,
+                `Fecha: ${exp.fecha}`,
+                `Banco: ${banco}`
+            ].join('\n');
+        };
+
+        /* ============================================================================
+         * FASE 6 — Copias de seguridad automáticas semanales
+         * IMPORTANTE (limitación técnica real, no un descuido): un navegador/WebView
+         * puede DESCARGAR archivos a la carpeta Descargas, pero por seguridad NO puede
+         * leer esa carpeta ni borrar archivos que ya están ahí — ninguna web app puede
+         * hacerlo, es una restricción de la plataforma. Por eso "mantener solo las 5
+         * últimas copias" se resuelve tal y como pedía la hoja de ruta: llevando el
+         * registro en localStorage (los 5 backups más recientes), no borrando ficheros
+         * del sistema. El registro se puede ver en Ajustes → Copias de seguridad.
+         * ========================================================================== */
+        const BACKUP_HISTORY_KEY = 'quantum_pocket_backup_history';
+        const BACKUP_HISTORY_MAX = 5;
+
+        const loadBackupHistory = () => {
+            try {
+                const saved = localStorage.getItem(BACKUP_HISTORY_KEY);
+                const parsed = saved ? JSON.parse(saved) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                logger.error('loadBackupHistory falló', e);
+                return [];
+            }
+        };
+
+        // Añade un backup al registro (más reciente primero) y recorta a los 5 últimos.
+        const registerBackupInHistory = (entry) => {
+            try {
+                const history = [entry, ...loadBackupHistory()].slice(0, BACKUP_HISTORY_MAX);
+                localStorage.setItem(BACKUP_HISTORY_KEY, JSON.stringify(history));
+                return history;
+            } catch (e) {
+                logger.error('registerBackupInHistory falló', e);
+                return loadBackupHistory();
+            }
+        };
+
+        // Es domingo y son las 23:59 (la ventana exacta que pide la hoja de ruta).
+        const esVentanaBackupDominical = (now) => now.getDay() === 0 && now.getHours() === 23 && now.getMinutes() === 59;
+
+        /* ============================================================================
+         * FASE 7 (revisión) — Historial de sincronizaciones con El Hilván
+         * La hoja de ruta pedía "guardar un historial de sincronizaciones", que no
+         * estaba implementado todavía. Registro en localStorage, igual que el de
+         * backups de la FASE 6.
+         * ========================================================================== */
+        const SYNC_HISTORY_KEY = 'quantum_pocket_sync_history';
+        const SYNC_HISTORY_MAX = 10;
+
+        const loadSyncHistory = () => {
+            try {
+                const saved = localStorage.getItem(SYNC_HISTORY_KEY);
+                const parsed = saved ? JSON.parse(saved) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                logger.error('loadSyncHistory falló', e);
+                return [];
+            }
+        };
+
+        const registerSyncInHistory = (entry) => {
+            try {
+                const history = [entry, ...loadSyncHistory()].slice(0, SYNC_HISTORY_MAX);
+                localStorage.setItem(SYNC_HISTORY_KEY, JSON.stringify(history));
+                return history;
+            } catch (e) {
+                logger.error('registerSyncInHistory falló', e);
+                return loadSyncHistory();
+            }
+        };
+
+        /* ============================================================================
+         * FASE 10 — Notificaciones push y recordatorios (servicios)
+         * IMPORTANTE (limitación técnica real, igual que con los backups de la FASE 6):
+         * esto es un único archivo HTML sin backend ni plugin nativo de Capacitor, así
+         * que las comprobaciones (¿toca recordatorio diario?, ¿hemos superado el 80%
+         * del presupuesto?, etc.) solo pueden ejecutarse mientras la app está ABIERTA
+         * en primer plano — igual que el backup semanal. La API Notification/Service
+         * Worker no puede "despertar" la app cerrada a una hora exacta sin un push real
+         * desde un servidor (que rompería la privacidad 100% local) o sin el plugin
+         * nativo @capacitor/local-notifications (que necesita tocar el proyecto Android,
+         * fuera de este HTML). Se deja documentado por si en el futuro se quiere dar el
+         * salto a ese plugin nativo — de momento esto es la aproximación práctica.
+         * ========================================================================== */
+        const NOTIF_SETTINGS_KEY = 'quantum_pocket_notification_settings';
+        const DEFAULT_NOTIF_SETTINGS = {
+            dailyReminderEnabled: true,
+            dailyReminderTime: '21:00',
+            budgetAlertEnabled: true,
+            cycleEndAlertEnabled: true,
+            inactivityAlertEnabled: true
+        };
+
+        const loadNotifSettings = () => {
+            try {
+                const saved = localStorage.getItem(NOTIF_SETTINGS_KEY);
+                if (!saved) return { ...DEFAULT_NOTIF_SETTINGS };
+                return { ...DEFAULT_NOTIF_SETTINGS, ...JSON.parse(saved) };
+            } catch (e) {
+                logger.error('loadNotifSettings falló', e);
+                return { ...DEFAULT_NOTIF_SETTINGS };
+            }
+        };
+
+        const saveNotifSettings = (settings) => {
+            try {
+                localStorage.setItem(NOTIF_SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {
+                logger.error('saveNotifSettings falló', e);
+            }
+        };
+
+        // Registro de "ya disparada" por tipo, para no repetir la misma alerta una y
+        // otra vez cada minuto mientras se cumpla la condición (una por día/semana/ciclo).
+        const NOTIF_FIRED_KEY = 'quantum_pocket_notifications_fired';
+
+        const loadNotifFired = () => {
+            try {
+                const saved = localStorage.getItem(NOTIF_FIRED_KEY);
+                return saved ? JSON.parse(saved) : {};
+            } catch (e) {
+                return {};
+            }
+        };
+
+        const saveNotifFired = (fired) => {
+            try { localStorage.setItem(NOTIF_FIRED_KEY, JSON.stringify(fired)); } catch (e) {}
+        };
+
         const App = () => {
             const [data, setData] = useState(() => loadData());
+
+            // FASE 7 — Borrado lógico (tombstones) para que la sincronización con
+            // El Hilván no "resucite" gastos borrados. `data.expenses` sigue guardando
+            // TODOS los gastos, incluidos los borrados (marcados con `deletedAt`), para
+            // poder enviarlos tal cual al sincronizar. `activeExpenses` es la vista
+            // "limpia" que usa el resto de la app (cálculos, listas, etc.) — nunca hay
+            // que usar data.expenses directamente salvo para guardar/sincronizar.
+            const activeExpenses = useMemo(
+                () => data.expenses.filter(e => !e.deletedAt),
+                [data.expenses]
+            );
+
+            // FASE 1 — Optimización de carga: solo se pintan los últimos 50 gastos,
+            // el resto se carga bajo demanda con el botón "Cargar más". Evita renderizar
+            // cientos de tarjetas de golpe según va creciendo el histórico.
+            const [visibleExpensesCount, setVisibleExpensesCount] = useState(50);
+            const visibleExpenses = useMemo(
+                () => activeExpenses.slice(0, visibleExpensesCount),
+                [activeExpenses, visibleExpensesCount]
+            );
+
+            // FASE 1 — Indicador de estado: tamaño aproximado de los datos guardados
+            // (útil para saber si te acercas a algún límite práctico de almacenamiento).
+            const dataSizeKB = useMemo(() => {
+                try {
+                    return (JSON.stringify(data).length / 1024).toFixed(1);
+                } catch (e) {
+                    return '?';
+                }
+            }, [data]);
+
             const [modalOpen, setModalOpen] = useState(false);
             const [editingId, setEditingId] = useState(null);
             const [formData, setFormData] = useState({ 
@@ -270,6 +818,9 @@
                 fecha: new Date().toISOString().slice(0,10) 
             });
             const [hasChanges, setHasChanges] = useState(false);
+            // FASE 4 — Errores de validación en tiempo real del formulario de gastos
+            const [formErrors, setFormErrors] = useState({ name: '', amount: '', fecha: '' });
+            const [showFieldErrors, setShowFieldErrors] = useState(false);
 
             const [isEditingBase, setIsEditingBase] = useState(false);
             const [tempBase, setTempBase] = useState(data.presupuestoMioMensual);
@@ -285,30 +836,111 @@
             });
             const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-            const [theme, setTheme] = useState(() => {
-                const saved = localStorage.getItem(THEME_KEY);
-                return saved || 'dark';
-            });
+            // FASE 2 — Autocompletado: conceptos recientes (últimos 10, más reciente primero)
+            const [recentConcepts, setRecentConcepts] = useState(() => sortConceptsByRecency(loadConcepts()));
 
             useEffect(() => {
-                if (theme === 'light') {
-                    document.body.classList.add('light-mode');
-                } else {
-                    document.body.classList.remove('light-mode');
-                }
-                localStorage.setItem(THEME_KEY, theme);
-            }, [theme]);
+                // Al cargar la app, se limpian los conceptos con más de 2 meses sin uso.
+                const cleaned = sortConceptsByRecency(cleanOldConcepts(loadConcepts()));
+                saveConcepts(cleaned);
+                setRecentConcepts(cleaned);
+            }, []);
 
-            useEffect(() => {
-                const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
-                if (lastActivity) {
-                    const diff = Date.now() - new Date(lastActivity).getTime();
-                    const hours = diff / (1000 * 60 * 60);
-                    if (hours > 24 && data.expenses.length > 0) {
-                        setToast('🔔 ¿Has hecho algún gasto hoy? ¡Apúntalo!');
+            // FASE 3 — Feedback háptico y sonoro, configurable desde Ajustes
+            const [feedbackSettings, setFeedbackSettings] = useState(() => loadFeedbackSettings());
+            const [showSettings, setShowSettings] = useState(false);
+            const audioCtxRef = useRef(null);
+
+            const ensureAudioCtx = () => {
+                if (!audioCtxRef.current) {
+                    try {
+                        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                        if (AudioCtx) audioCtxRef.current = new AudioCtx();
+                    } catch (e) {
+                        logger.error('AudioContext no disponible', e);
                     }
                 }
-                localStorage.setItem(LAST_ACTIVITY_KEY, new Date().toISOString());
+                if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+                    audioCtxRef.current.resume().catch(() => {});
+                }
+                return audioCtxRef.current;
+            };
+
+            const triggerFeedback = (type) => {
+                if (feedbackSettings.vibrationEnabled && navigator.vibrate) {
+                    try { navigator.vibrate(getVibrationPattern(type, feedbackSettings.vibrationIntensity)); } catch (e) {}
+                }
+                if (feedbackSettings.soundEnabled) {
+                    try { playFeedbackSound(ensureAudioCtx(), type); } catch (e) { logger.error('Error al reproducir sonido', e); }
+                }
+            };
+
+            const updateFeedbackSettings = (patch) => {
+                setFeedbackSettings(prev => {
+                    const next = { ...prev, ...patch };
+                    saveFeedbackSettings(next);
+                    return next;
+                });
+            };
+
+            // FASE 10 — Notificaciones push y recordatorios, configurables desde Ajustes
+            const [notifSettings, setNotifSettings] = useState(() => loadNotifSettings());
+            const [notifPermission, setNotifPermission] = useState(() =>
+                (typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
+            );
+
+            const updateNotifSettings = (patch) => {
+                setNotifSettings(prev => {
+                    const next = { ...prev, ...patch };
+                    saveNotifSettings(next);
+                    return next;
+                });
+            };
+
+            const requestNotifPermission = async () => {
+                if (typeof Notification === 'undefined') {
+                    setToast('⚠️ Este navegador no soporta notificaciones');
+                    return;
+                }
+                try {
+                    const result = await Notification.requestPermission();
+                    setNotifPermission(result);
+                    setToast(result === 'granted' ? '✅ Notificaciones activadas' : '⚠️ Notificaciones bloqueadas por el sistema');
+                } catch (e) {
+                    logger.error('requestNotifPermission falló', e);
+                    setToast('⚠️ No se pudo pedir permiso de notificaciones');
+                }
+            };
+
+            // Muestra la notificación real (si hay permiso) y SIEMPRE un toast dentro de
+            // la app como red de seguridad — así el aviso no se pierde si el permiso del
+            // sistema está denegado o el navegador no soporta Notification.
+            const showAppNotification = (title, body) => {
+                setToast(`${title} · ${body}`);
+                triggerFeedback('click');
+                if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+                try {
+                    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+                        navigator.serviceWorker.ready
+                            .then(reg => reg.showNotification(title, { body, icon: './icon-192.png', badge: './icon-192.png' }))
+                            .catch(() => { try { new Notification(title, { body, icon: './icon-192.png' }); } catch (e2) {} });
+                    } else {
+                        new Notification(title, { body, icon: './icon-192.png' });
+                    }
+                } catch (e) {
+                    logger.error('showAppNotification falló', e);
+                }
+            };
+
+            useEffect(() => {
+                // Solo inicializa la fecha de última actividad si no existía todavía —
+                // antes se pisaba en cada apertura de la app, lo que hacía inútil medir
+                // "días sin registrar gastos" (el recordatorio de inactividad de la FASE 10
+                // necesita que esto refleje el último GASTO real, no la última vez que
+                // abriste la app).
+                if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+                    localStorage.setItem(LAST_ACTIVITY_KEY, new Date().toISOString());
+                }
             }, []);
 
             const updateLastActivity = () => {
@@ -320,6 +952,21 @@
             const importInputRef = useRef(null);
             const hasHydrated = useRef(false);
             const [lastSyncAt, setLastSyncAt] = useState(null);
+            // FASE 7 (revisión) — Historial de sincronizaciones con El Hilván
+            const [syncHistory, setSyncHistory] = useState(() => loadSyncHistory());
+            // FASE 6 — Registro de las últimas copias de seguridad semanales realizadas
+            const [backupHistory, setBackupHistory] = useState(() => loadBackupHistory());
+
+            // FASE 7 — Sincronización WiFi con El Hilván (PC)
+            const [showSyncModal, setShowSyncModal] = useState(false);
+            const [syncForm, setSyncForm] = useState(() => ({
+                ip: BolsilloStorage.get('sync_last_ip', ''),
+                port: BolsilloStorage.get('sync_last_port', '8080'),
+                pin: ''
+            }));
+            const [syncStatus, setSyncStatus] = useState('idle'); // idle | connecting | syncing | success | auth_fail | error
+            const [syncMessage, setSyncMessage] = useState('');
+            const syncHandleRef = useRef(null);
 
             const cardRefs = useRef({});
             const categoryRefs = useRef({});
@@ -450,6 +1097,8 @@
                     const hasName = formData.name.trim().length > 0;
                     const hasAmount = formData.amount && parseFloat(formData.amount) > 0;
                     setHasChanges(hasName || hasAmount);
+                    // FASE 4 — Se revalida en cada pulsación mientras el modal está abierto.
+                    setFormErrors(validateExpenseForm(formData));
                 } else {
                     setHasChanges(false);
                 }
@@ -457,6 +1106,10 @@
 
             useEffect(() => {
                 if (toast) {
+                    // FASE 3 — Cada toast dispara automáticamente su feedback háptico/sonoro
+                    // correspondiente (éxito, error o click neutro), sin tocar los ~30
+                    // sitios que ya llaman a setToast(...).
+                    triggerFeedback(getFeedbackType(toast));
                     const timer = setTimeout(() => setToast(null), 4000);
                     return () => clearTimeout(timer);
                 }
@@ -490,7 +1143,7 @@
                     return false;
                 }
 
-                const totalGastado = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                const totalGastado = activeExpenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
                 const gastadoRecalibradoPrev = data.gastadoRecalibrado || 0;
                 const gastadoNuevo = Math.max(0, totalGastado - gastadoRecalibradoPrev);
 
@@ -534,16 +1187,16 @@
             }, [data.budgetReset?.date]);
 
             const handleResetCycle = () => {
-                if (data.expenses.length === 0) {
+                if (activeExpenses.length === 0) {
                     if (!window.confirm('¿Reiniciar ciclo sin gastos?')) return;
                 } else {
                     if (!window.confirm('¿Reiniciar ciclo? Se generará un backup de los gastos actuales.')) return;
                 }
 
                 const hoy = new Date();
-                const totalGastadoCicloAnterior = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                const totalGastadoCicloAnterior = activeExpenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
 
-                if (data.expenses.length > 0) {
+                if (activeExpenses.length > 0) {
                     const mesActual = hoy.toLocaleString('es', { month: 'long', year: 'numeric' });
                     const fileName = `cierre_ciclo_${mesActual.replace(/ /g, '_')}.json`;
                     
@@ -552,7 +1205,7 @@
                         presupuestoOriginalMes: data.presupuestoOriginalMes,
                         presupuestoMioMensual: data.presupuestoMioMensual,
                         budgetReset: data.budgetReset,
-                        expenses: data.expenses
+                        expenses: activeExpenses
                     };
 
                     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -705,12 +1358,16 @@
                 setEditingId(null);
                 setFormData({ name: '', amount: '', category: 'Ocio', tipoGasto: 'Individual', fecha: new Date().toISOString().slice(0,10) });
                 setHasChanges(false);
+                setFormErrors({ name: '', amount: '', fecha: '' });
+                setShowFieldErrors(false);
             };
 
             const handleOpenAdd = () => {
                 setEditingId(null);
                 setFormData({ name: '', amount: '', category: 'Ocio', tipoGasto: 'Individual', fecha: new Date().toISOString().slice(0,10) });
                 setHasChanges(false);
+                setFormErrors({ name: '', amount: '', fecha: '' });
+                setShowFieldErrors(false);
                 setModalOpen(true);
                 setTimeout(() => inputRef.current?.focus(), 100);
             };
@@ -725,18 +1382,30 @@
                     fecha: exp.fecha 
                 });
                 setHasChanges(true);
+                setFormErrors({ name: '', amount: '', fecha: '' });
+                setShowFieldErrors(false);
                 setModalOpen(true);
                 setTimeout(() => inputRef.current?.focus(), 100);
             };
 
             const handleSaveExpense = (e) => {
                 e.preventDefault();
-                if (!formData.name.trim() || !formData.amount) return alert('Rellena nombre e importe');
+                // FASE 4 — Validación en tiempo real: si hay algún campo inválido, se
+                // muestran los mensajes de error (bordes rojos) y no se guarda nada.
+                const errors = validateExpenseForm(formData);
+                setFormErrors(errors);
+                if (!isExpenseFormValid(errors)) {
+                    setShowFieldErrors(true);
+                    setToast('⚠️ Revisa los campos marcados en rojo');
+                    return;
+                }
                 
+                const now = new Date().toISOString();
+
                 if (editingId) {
                     setData(prev => ({
                         ...prev,
-                        expenses: prev.expenses.map(ex => ex.id === editingId ? { ...ex, ...formData, amount: parseFloat(formData.amount) } : ex)
+                        expenses: prev.expenses.map(ex => ex.id === editingId ? { ...ex, ...formData, amount: parseFloat(formData.amount), lastModified: now } : ex)
                     }));
                     setToast('✅ Gasto actualizado');
                 } else {
@@ -747,33 +1416,197 @@
                         category: formData.category,
                         tipoGasto: formData.tipoGasto,
                         fecha: formData.fecha,
-                        presupuestoMio: true
+                        presupuestoMio: true,
+                        lastModified: now // FASE 7 — necesario para la fusión al sincronizar con El Hilván
                     };
                     setData(prev => ({ ...prev, expenses: [newExp, ...prev.expenses] }));
                     setToast('✅ Gasto guardado');
                 }
 
+                // FASE 2 — Registrar el concepto usado para el autocompletado
+                setRecentConcepts(registerConceptUsage(formData.name));
+
                 setModalOpen(false);
                 setEditingId(null);
                 setFormData({ name: '', amount: '', category: 'Ocio', tipoGasto: 'Individual', fecha: new Date().toISOString().slice(0,10) });
                 setHasChanges(false);
+                setFormErrors({ name: '', amount: '', fecha: '' });
+                setShowFieldErrors(false);
                 updateLastActivity();
                 setTimeout(() => recalcularBloques(false), 300);
             };
 
             const handleDelete = (id) => {
                 if (window.confirm('¿Borrar este gasto?')) {
-                    setData(prev => ({ ...prev, expenses: prev.expenses.filter(ex => ex.id !== id) }));
+                    // FASE 7 — Borrado lógico: no se quita del array, se marca con
+                    // `deletedAt` (además de refrescar `lastModified`). Así, al
+                    // sincronizar con El Hilván, el otro lado sabe que este gasto se
+                    // borró y no lo vuelve a traer de vuelta.
+                    const now = new Date().toISOString();
+                    setData(prev => ({
+                        ...prev,
+                        expenses: prev.expenses.map(ex =>
+                            ex.id === id ? { ...ex, deletedAt: now, lastModified: now } : ex
+                        )
+                    }));
                     setToast('🗑️ Gasto eliminado');
                     updateLastActivity();
                     setTimeout(() => recalcularBloques(false), 300);
                 }
             };
 
+            // FASE 5 — Compartir un gasto por WhatsApp, Telegram, etc. (Web Share API),
+            // o copiar el mensaje al portapapeles si el navegador no la soporta.
+            const handleShareExpense = async (exp) => {
+                const texto = formatShareText(exp, data.banco);
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ text: texto, title: 'Gasto compartido' });
+                        setToast('✅ Gasto compartido');
+                    } catch (err) {
+                        // El usuario cancela el diálogo de compartir: no es un error real.
+                        if (err && err.name === 'AbortError') return;
+                        logger.error('Error al compartir el gasto', err);
+                        setToast('⚠️ No se pudo compartir el gasto');
+                    }
+                    return;
+                }
+
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(texto);
+                    } else {
+                        // Fallback para navegadores sin Clipboard API.
+                        const textarea = document.createElement('textarea');
+                        textarea.value = texto;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.focus();
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                    }
+                    setToast('📋 Gasto copiado al portapapeles');
+                } catch (err) {
+                    logger.error('Error al copiar el gasto', err);
+                    setToast('⚠️ No se pudo copiar el gasto');
+                }
+            };
+
+            /* ============================================================================
+             * FASE 9 — Atajos por gestos (deslizamientos táctiles)
+             * Dos tipos de gesto:
+             *  1) Por fila de gasto: swipe ← borra, swipe → edita. Se calcula con refs
+             *     (no state) mientras el dedo se mueve, y solo se decide si es horizontal
+             *     o vertical mirando qué eje domina en los primeros píxeles — si gana el
+             *     vertical, se suelta el gesto y el scroll de la lista sigue nativo.
+             *  2) Globales en la pantalla principal: swipe ↓ con el scroll arriba del todo
+             *     abre "nuevo gasto"; swipe ↑ lleva al resumen del ciclo/semanas que ya
+             *     existe como tarjeta (no hace falta una vista nueva).
+             * ========================================================================== */
+            const SWIPE_ROW_THRESHOLD = 80;   // px para disparar borrar/editar al soltar
+            const SWIPE_ROW_MAX = 110;        // px máximo de arrastre visual
+            const SWIPE_AXIS_LOCK_PX = 10;    // px iniciales para decidir el eje del gesto
+
+            const [swipeState, setSwipeState] = useState({ id: null, dx: 0 });
+            const expenseTouchRef = useRef(null);
+
+            const handleExpenseTouchStart = (exp, e) => {
+                // Si el toque empieza en un botón (compartir/editar/borrar) o en el
+                // grip de arrastre de tarjetas, dejamos pasar el gesto tal cual: no
+                // queremos que el swipe le robe el toque a esos controles.
+                if (e.target.closest('button, .drag-handle')) return;
+                const t = e.touches[0];
+                expenseTouchRef.current = { id: exp.id, startX: t.clientX, startY: t.clientY, active: false, dx: 0 };
+            };
+
+            const handleExpenseTouchMove = (exp, e) => {
+                const info = expenseTouchRef.current;
+                if (!info || info.id !== exp.id) return;
+                const t = e.touches[0];
+                const dx = t.clientX - info.startX;
+                const dy = t.clientY - info.startY;
+
+                if (!info.active) {
+                    if (Math.abs(dx) < SWIPE_AXIS_LOCK_PX && Math.abs(dy) < SWIPE_AXIS_LOCK_PX) return;
+                    if (Math.abs(dy) > Math.abs(dx)) {
+                        // Gana el eje vertical: es un scroll normal de la lista, soltamos el gesto.
+                        expenseTouchRef.current = null;
+                        return;
+                    }
+                    info.active = true;
+                }
+
+                const clamped = Math.max(-SWIPE_ROW_MAX, Math.min(SWIPE_ROW_MAX, dx));
+                info.dx = clamped;
+                setSwipeState({ id: exp.id, dx: clamped });
+            };
+
+            const handleExpenseTouchEnd = (exp) => {
+                const info = expenseTouchRef.current;
+                expenseTouchRef.current = null;
+                setSwipeState({ id: null, dx: 0 });
+                if (!info || !info.active) return;
+
+                if (info.dx <= -SWIPE_ROW_THRESHOLD) {
+                    triggerFeedback('click');
+                    handleDelete(exp.id);
+                } else if (info.dx >= SWIPE_ROW_THRESHOLD) {
+                    triggerFeedback('click');
+                    handleOpenEdit(exp);
+                }
+            };
+
+            const handleExpenseTouchCancel = () => {
+                expenseTouchRef.current = null;
+                setSwipeState({ id: null, dx: 0 });
+            };
+
+            // Gestos globales en la pantalla principal (nuevo gasto / ir al resumen).
+            const SWIPE_GLOBAL_THRESHOLD = 70;
+            const mainTouchRef = useRef(null);
+            const anyModalOpen = modalOpen || showSettings || showSyncModal || showCreator || showGuide || !!selectedCategoryModal;
+
+            const handleMainTouchStart = (e) => {
+                if (anyModalOpen || expenseTouchRef.current) return;
+                const t = e.touches[0];
+                mainTouchRef.current = { x: t.clientX, y: t.clientY, scrollYAtStart: window.scrollY };
+            };
+
+            const handleMainTouchEnd = (e) => {
+                const start = mainTouchRef.current;
+                mainTouchRef.current = null;
+                if (!start) return;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - start.x;
+                const dy = t.clientY - start.y;
+                if (Math.abs(dy) < SWIPE_GLOBAL_THRESHOLD || Math.abs(dy) < Math.abs(dx) * 1.5) return;
+
+                if (dy > 0) {
+                    // Swipe hacia abajo: solo cuenta si ya estabas arriba del todo,
+                    // para no interferir con el scroll normal hacia abajo del contenido.
+                    if (start.scrollYAtStart <= 5) {
+                        triggerFeedback('click');
+                        handleOpenAdd();
+                    }
+                } else {
+                    // Swipe hacia arriba: lleva al resumen del ciclo (tarjeta "Ciclo de 30 Días").
+                    const el = cardRefs.current['ciclo'];
+                    if (el) {
+                        triggerFeedback('click');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('ring-2', 'ring-indigo-400/60');
+                        setTimeout(() => el.classList.remove('ring-2', 'ring-indigo-400/60'), 900);
+                    }
+                }
+            };
+
             const handleSaveBase = () => {
                 const val = parseFloat(tempBase);
                 if (!isNaN(val) && val >= 0) {
-                    const cicloRecienEmpezado = data.expenses.length === 0;
+                    const cicloRecienEmpezado = activeExpenses.length === 0;
                     const nuevoReajuste = {
                         fecha: new Date().toISOString(),
                         saldoAntes: data.presupuestoMioMensual,
@@ -794,7 +1627,7 @@
                     setIsEditingBase(false);
                     setToast('✅ Presupuesto actualizado');
                 } else {
-                    alert('Introduce un importe válido');
+                    setToast('⚠️ Introduce un importe válido');
                 }
             };
 
@@ -807,9 +1640,12 @@
                 a.href = url;
                 
                 if (isWeekly) {
-                    a.download = `bolsillo_backup_semanal_${stamp}.json`;
+                    const fileName = `bolsillo_backup_semanal_${stamp}.json`;
+                    a.download = fileName;
                     localStorage.setItem(LAST_WEEKLY_BACKUP_KEY, now.toISOString());
-                    setToast('🛡️ Copia de seguridad semanal automática guardada');
+                    // FASE 6 — Se anota en el registro de backups (máx. 5, más reciente primero).
+                    setBackupHistory(registerBackupInHistory({ fecha: now.toISOString(), fileName, manual }));
+                    setToast(manual ? '🛡️ Backup manual guardado en Descargas' : '🛡️ Copia de seguridad semanal automática guardada');
                 } else {
                     a.download = `bolsillo_sync_${stamp}.json`;
                     if (manual) setToast('📤 Sincronizado a Descargas');
@@ -820,7 +1656,122 @@
                 setLastSyncAt(now.toISOString());
             };
 
+            // FASE 6 — Botón de "backup manual inmediato": usa el mismo formato/registro
+            // que el backup automático semanal, pero disparado a mano en cualquier momento.
+            const handleManualBackup = () => exportSyncSnapshot(true, true);
+
             const exportMobileJson = () => exportSyncSnapshot(true, false);
+
+            // FASE 7 — Sincronización WiFi con El Hilván -----------------------------
+            const handleStartSync = () => {
+                const ip = syncForm.ip.trim();
+                const port = syncForm.port.trim() || '8080';
+                const pin = syncForm.pin.trim();
+
+                if (!ip) { setSyncMessage('Introduce la IP que muestra El Hilván en el PC.'); setSyncStatus('error'); return; }
+                if (!/^\d{4}$/.test(pin)) { setSyncMessage('El PIN son 4 dígitos.'); setSyncStatus('error'); return; }
+
+                BolsilloStorage.set('sync_last_ip', ip);
+                BolsilloStorage.set('sync_last_port', port);
+
+                setSyncStatus('connecting');
+                setSyncMessage('Conectando con El Hilván...');
+
+                // Se manda TODO data.expenses (incluidos los borrados con deletedAt), no
+                // solo activeExpenses: El Hilván necesita saber qué se ha borrado para no
+                // resucitarlo. Loans/savings van vacíos porque Bolsillo no los gestiona —
+                // el merge de El Hilván los deja intactos (unión, no sobrescritura).
+                const localData = {
+                    expenses: data.expenses,
+                    loans: [],
+                    savings: [],
+                    budgetReset: data.budgetReset
+                };
+
+                syncHandleRef.current = syncWithPC(ip, port, pin, localData, (status, extra) => {
+                    setSyncStatus(status);
+                    if (status === 'syncing') setSyncMessage('PIN correcto, sincronizando datos...');
+                    if (status === 'auth_fail') setSyncMessage(extra || 'PIN incorrecto.');
+                    if (status === 'error') setSyncMessage(extra || 'No se pudo sincronizar.');
+                    if (status === 'success') {
+                        applySyncResult(extra);
+                    }
+                });
+            };
+
+            const handleCancelSync = () => {
+                if (syncHandleRef.current) syncHandleRef.current.cancel();
+                setShowSyncModal(false);
+                setSyncStatus('idle');
+                setSyncMessage('');
+                setSyncForm(prev => ({ ...prev, pin: '' }));
+            };
+
+            const applySyncResult = (payload) => {
+                if (!payload || !Array.isArray(payload.expenses)) {
+                    setSyncMessage('El PC devolvió una respuesta con un formato inesperado.');
+                    setSyncStatus('error');
+                    return;
+                }
+
+                // FASE 7 (revisión) — Antes de sobrescribir, comparamos con lo que había
+                // localmente (por ID y por lastModified) para poder decir cuántos gastos
+                // son nuevos y cuántos se han actualizado, tal como pedía la hoja de ruta.
+                const prevMap = new Map((data.expenses || []).map(e => [e.id, e]));
+                let nuevos = 0, actualizados = 0;
+                payload.expenses.forEach(e => {
+                    if (e.deletedAt) return;
+                    const prev = prevMap.get(e.id);
+                    if (!prev) nuevos++;
+                    else if (prev.lastModified !== e.lastModified) actualizados++;
+                });
+                const totalActivos = payload.expenses.filter(e => !e.deletedAt).length;
+
+                setData(prev => ({
+                    ...prev,
+                    expenses: payload.expenses,
+                    budgetReset: payload.budgetReset || prev.budgetReset
+                }));
+                const now = new Date().toISOString();
+                setLastSyncAt(now);
+
+                const partes = [];
+                if (nuevos > 0) partes.push(`${nuevos} nuevo${nuevos > 1 ? 's' : ''}`);
+                if (actualizados > 0) partes.push(`${actualizados} actualizado${actualizados > 1 ? 's' : ''}`);
+                const detalle = partes.length ? `${partes.join(', ')} · ` : '';
+                setSyncMessage(`✅ Sincronizado: ${detalle}${totalActivos} gastos en total`);
+
+                // FASE 7 (revisión) — Se guarda en el historial de sincronizaciones.
+                setSyncHistory(registerSyncInHistory({
+                    fecha: now,
+                    ip: syncForm.ip.trim(),
+                    nuevos,
+                    actualizados,
+                    total: totalActivos
+                }));
+
+                updateLastActivity();
+                setTimeout(() => recalcularBloques(false), 300);
+                setTimeout(() => {
+                    setShowSyncModal(false);
+                    setSyncStatus('idle');
+                    setSyncForm(prev => ({ ...prev, pin: '' }));
+                }, 1800);
+            };
+
+            // FASE 6 — ¿Toca hacer backup automático ahora? Sí si: (a) ya han pasado 7
+            // días o más desde el último (red de seguridad si la app no estuvo abierta
+            // justo el domingo a las 23:59), o (b) estamos exactamente en esa ventana
+            // horaria y ha pasado al menos 1 día desde el anterior (evita repetirlo).
+            const shouldRunWeeklyBackup = () => {
+                if (activeExpenses.length === 0) return false;
+                const lastBackupStr = localStorage.getItem(LAST_WEEKLY_BACKUP_KEY);
+                if (!lastBackupStr) return false;
+                const now = new Date();
+                const diffDays = (now - new Date(lastBackupStr)) / (1000 * 60 * 60 * 24);
+                if (diffDays >= 7) return true;
+                return esVentanaBackupDominical(now) && diffDays >= 1;
+            };
 
             useEffect(() => {
                 if (!hasHydrated.current) { 
@@ -829,14 +1780,26 @@
                     
                     if (!lastBackupStr) {
                         localStorage.setItem(LAST_WEEKLY_BACKUP_KEY, new Date().toISOString());
-                    } else {
-                        const diffDays = (new Date() - new Date(lastBackupStr)) / (1000 * 60 * 60 * 24);
-                        if (diffDays >= 7 && data.expenses.length > 0) {
-                            setTimeout(() => exportSyncSnapshot(false, true), 2000);
-                        }
+                    } else if (shouldRunWeeklyBackup()) {
+                        setTimeout(() => exportSyncSnapshot(false, true), 2000);
                     }
                 }
-            }, [data.expenses.length]);
+            }, [activeExpenses.length]);
+
+            // FASE 6 — Además del chequeo al abrir la app (arriba), se vigila cada
+            // minuto por si la app se queda abierta en primer plano hasta el domingo a
+            // las 23:59, tal y como pide la hoja de ruta (con setInterval). Nota: un
+            // navegador no puede ejecutar esto con la app cerrada o en segundo plano
+            // durante mucho tiempo; por eso el chequeo al abrir la app sigue siendo la
+            // red de seguridad principal para no perderse ningún backup semanal.
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    if (shouldRunWeeklyBackup()) {
+                        exportSyncSnapshot(false, true);
+                    }
+                }, 60000);
+                return () => clearInterval(interval);
+            }, [activeExpenses.length, data]);
 
             const handleImportFile = (e) => {
                 const file = e.target.files?.[0];
@@ -872,12 +1835,12 @@
             };
 
             const exportCSV = () => {
-                if (data.expenses.length === 0) {
+                if (activeExpenses.length === 0) {
                     setToast('⚠️ No hay gastos para exportar');
                     return;
                 }
                 let csv = "Fecha,Concepto,Importe,Categoria,Ambito\n";
-                data.expenses.forEach(e => {
+                activeExpenses.forEach(e => {
                     csv += `${e.fecha},${e.name},${e.amount},${e.category || 'Otros'},${e.tipoGasto || 'Individual'}\n`;
                 });
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -898,10 +1861,6 @@
                 }
             };
 
-            const toggleTheme = () => {
-                setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-            };
-
             const presupuestoSemanal = useMemo(() => {
                 const hoy = new Date();
                 const cycleStartStr = data.budgetReset?.date || null;
@@ -909,7 +1868,7 @@
                 const weeks = getFinancialCycleWeeks(cycleStartStr);
 
                 const semanasConDatos = weeks.map((w, idx) => {
-                    const expensesInWeek = data.expenses.filter(e => {
+                    const expensesInWeek = activeExpenses.filter(e => {
                         const d = new Date(e.fecha).getTime();
                         const startTime = new Date(w.startChunk).setHours(0,0,0,0);
                         const endTime = new Date(w.endChunk).setHours(23,59,59,999);
@@ -952,13 +1911,13 @@
                 let semanaActual = semanasConRollover.find(w => hoy.getTime() >= new Date(w.startChunk).setHours(0,0,0,0) && hoy.getTime() <= new Date(w.endChunk).setHours(23,59,59,999)) || semanasConRollover[0];
 
                 const presupuestoOriginal = typeof data.presupuestoOriginalMes === 'number' ? data.presupuestoOriginalMes : activeBase;
-                const totalGastadoCiclo = data.expenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
+                const totalGastadoCiclo = activeExpenses.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
                 const restanteTotalMes = presupuestoOriginal - totalGastadoCiclo;
                 const porcentajeUsadoMes = presupuestoOriginal > 0 ? Math.min(100, (totalGastadoCiclo / presupuestoOriginal) * 100) : 0;
 
                 const porCategoria = {};
                 CATEGORIAS_GASTO.forEach(cat => {
-                    porCategoria[cat] = data.expenses
+                    porCategoria[cat] = activeExpenses
                         .filter(e => (e.category || 'Otros') === cat)
                         .reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
                 });
@@ -966,7 +1925,7 @@
                 const ajustePendiente = data.lastWeekRecalc !== null && data.lastWeekRecalc !== indexActual0;
 
                 const hoyStr = hoy.toISOString().slice(0,10);
-                const gastoHoy = data.expenses
+                const gastoHoy = activeExpenses
                     .filter(e => e.fecha === hoyStr)
                     .reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
 
@@ -991,7 +1950,7 @@
                     remanenteAcumulado,
                     gastosSemanaActual
                 };
-            }, [data.expenses, data.presupuestoMioMensual, data.presupuestoOriginalMes, data.budgetReset, data.lastWeekRecalc]);
+            }, [activeExpenses, data.presupuestoMioMensual, data.presupuestoOriginalMes, data.budgetReset, data.lastWeekRecalc]);
 
             const { 
                 semanas, 
@@ -1008,6 +1967,103 @@
                 remanenteAcumulado,
                 gastosSemanaActual
             } = presupuestoSemanal;
+
+            /* ============================================================================
+             * FASE 8 — Widget de pantalla de inicio (Android)
+             * ----------------------------------------------------------------------------
+             * Cada vez que cambia alguna de las cifras clave, se las mandamos al widget
+             * nativo vía window.BolsilloServices.widget.sync (ver definición arriba).
+             * Fuera de Capacitor (navegador normal) esto es un no-op.
+             * ========================================================================== */
+            useEffect(() => {
+                let diasRestantesCiclo = null;
+                if (data.budgetReset?.date) {
+                    const inicio = new Date(data.budgetReset.date);
+                    const fin = new Date(inicio);
+                    fin.setDate(fin.getDate() + CICLO_DIAS);
+                    diasRestantesCiclo = Math.max(0, Math.ceil((fin - new Date()) / (1000 * 60 * 60 * 24)));
+                }
+                window.BolsilloServices.widget.sync({
+                    disponibleAhora: Number((disponibleAhora || 0).toFixed(2)),
+                    gastoHoy: Number((gastoHoy || 0).toFixed(2)),
+                    restanteTotalMes: Number((restanteTotalMes || 0).toFixed(2)),
+                    presupuestoRealActual: Number((presupuestoRealActual || 0).toFixed(2)),
+                    gastosSemanaActual: Number((gastosSemanaActual || 0).toFixed(2)),
+                    diasRestantesCiclo,
+                    actualizadoEn: new Date().toISOString()
+                });
+            }, [disponibleAhora, gastoHoy, restanteTotalMes, presupuestoRealActual, gastosSemanaActual, data.budgetReset]);
+
+            /* ============================================================================
+             * FASE 10 — Comprobación periódica de recordatorios y alertas
+             * Mismo patrón que el backup semanal de la FASE 6: se comprueba al abrir la
+             * app y luego cada minuto mientras siga abierta en primer plano. Cada tipo de
+             * aviso guarda en NOTIF_FIRED_KEY la última vez que se disparó, para no repetir
+             * el mismo aviso en cada comprobación mientras la condición siga cumpliéndose.
+             * ========================================================================== */
+            useEffect(() => {
+                const checkNotifications = () => {
+                    const fired = loadNotifFired();
+                    const now = new Date();
+                    let cambiado = false;
+
+                    // 1) Recordatorio diario, a la hora configurada en Ajustes.
+                    if (notifSettings.dailyReminderEnabled) {
+                        const todayKey = now.toISOString().slice(0, 10);
+                        const [h, m] = (notifSettings.dailyReminderTime || '21:00').split(':').map(Number);
+                        if (fired.dailyReminder !== todayKey && now.getHours() === h && now.getMinutes() === m) {
+                            showAppNotification('📒 Recordatorio diario', '¿Has apuntado todos los gastos de hoy?');
+                            fired.dailyReminder = todayKey;
+                            cambiado = true;
+                        }
+                    }
+
+                    // 2) Alerta de presupuesto: se ha superado el 80% de la semana actual.
+                    if (notifSettings.budgetAlertEnabled && semanaActual && presupuestoRealActual > 0) {
+                        const weekKey = new Date(semanaActual.startChunk).toISOString().slice(0, 10);
+                        const pct = gastosSemanaActual / presupuestoRealActual;
+                        if (pct >= 0.8 && fired.budgetAlert !== weekKey) {
+                            showAppNotification('⚠️ Presupuesto semanal', `Ya llevas gastado el ${Math.round(pct * 100)}% de esta semana.`);
+                            fired.budgetAlert = weekKey;
+                            cambiado = true;
+                        }
+                    }
+
+                    // 3) Alerta de fin de ciclo: quedan 3 días o menos para que acabe.
+                    if (notifSettings.cycleEndAlertEnabled && data.budgetReset?.date) {
+                        const inicio = new Date(data.budgetReset.date);
+                        const fin = new Date(inicio);
+                        fin.setDate(fin.getDate() + 28);
+                        const diasRestantes = Math.ceil((fin - now) / (1000 * 60 * 60 * 24));
+                        const cycleKey = data.budgetReset.date;
+                        if (diasRestantes >= 0 && diasRestantes <= 3 && fired.cycleEnd !== cycleKey) {
+                            showAppNotification('⏳ Fin de ciclo cerca', `Quedan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'} para que termine tu ciclo.`);
+                            fired.cycleEnd = cycleKey;
+                            cambiado = true;
+                        }
+                    }
+
+                    // 4) Recordatorio de inactividad: 3 días o más sin registrar ningún gasto.
+                    if (notifSettings.inactivityAlertEnabled) {
+                        const lastActivityStr = localStorage.getItem(LAST_ACTIVITY_KEY);
+                        if (lastActivityStr) {
+                            const diffDays = (now - new Date(lastActivityStr)) / (1000 * 60 * 60 * 24);
+                            const todayKey = now.toISOString().slice(0, 10);
+                            if (diffDays >= 3 && fired.inactivity !== todayKey) {
+                                showAppNotification('👀 Sin movimiento', 'Llevas 3 días sin registrar ningún gasto.');
+                                fired.inactivity = todayKey;
+                                cambiado = true;
+                            }
+                        }
+                    }
+
+                    if (cambiado) saveNotifFired(fired);
+                };
+
+                checkNotifications();
+                const interval = setInterval(checkNotifications, 60000);
+                return () => clearInterval(interval);
+            }, [notifSettings, semanaActual, presupuestoRealActual, gastosSemanaActual, data.budgetReset]);
 
             // Semanas a mostrar en la tarjeta "Ciclo de 30 Días": se ocultan las que ya han
             // terminado (siguen existiendo por debajo para el rollover, solo no se pintan).
@@ -1049,18 +2105,23 @@
 
             const categoryExpenses = useMemo(() => {
                 if (!selectedCategoryModal) return { individual: [], comun: [], totalInd: 0, totalCom: 0 };
-                const list = data.expenses.filter(e => (e.category || 'Otros') === selectedCategoryModal);
+                const list = activeExpenses.filter(e => (e.category || 'Otros') === selectedCategoryModal);
                 const individual = list.filter(e => (e.tipoGasto || 'Individual') === 'Individual');
                 const comun = list.filter(e => e.tipoGasto === 'Común');
                 const totalInd = individual.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
                 const totalCom = comun.reduce((acc, e) => acc + parseFloat(e.amount || 0), 0);
                 return { individual, comun, totalInd, totalCom };
-            }, [data.expenses, selectedCategoryModal]);
+            }, [activeExpenses, selectedCategoryModal]);
 
             return (
-                <div className="space-y-4 animate-fade">
+                <div
+                    className="space-y-4 animate-fade"
+                    onTouchStart={handleMainTouchStart}
+                    onTouchEnd={handleMainTouchEnd}
+                    onTouchCancel={() => { mainTouchRef.current = null; }}
+                >
                     {toast && (
-                        <div className="toast">
+                        <div className={`toast toast-${getToastLevel(toast)}`}>
                             {toast}
                         </div>
                     )}
@@ -1125,12 +2186,13 @@
                                 </div>
                                 <p className="text-[12px] text-slate-400 uppercase tracking-widest mt-0.5">
                                     {lastSyncAt ? `Sincronizado ${new Date(lastSyncAt).toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'})}` : 'Sincronizable'}
+                                    {' · '}{activeExpenses.length} gastos · {dataSizeKB} KB
                                 </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap justify-end">
-                            <button onClick={toggleTheme} className="theme-toggle" title="Cambiar tema">
-                                <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
+                            <button onClick={() => setShowSyncModal(true)} title="Sincronizar por WiFi con El Hilván" className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
+                                <i className="fa-solid fa-wifi"></i>
                             </button>
                             <input type="file" accept="application/json" ref={importInputRef} onChange={handleImportFile} className="hidden" />
                             <button onClick={() => importInputRef.current?.click()} title="Importar gastos de otro móvil sin perder los tuyos" className="bg-white/10 hover:bg-white/20 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
@@ -1337,7 +2399,7 @@
                                             <div className="flex items-center gap-1.5 cursor-pointer hover:bg-white/5 rounded-lg flex-1" onClick={() => setSelectedCategoryModal(cat)}>
                                                 <i onPointerDown={(e) => { e.stopPropagation(); categoryDrag.onPointerDown(cat, e); }} className="fa-solid fa-grip-vertical text-slate-600 text-[10px] cursor-grab active:cursor-grabbing touch-none px-0.5"></i>
                                                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORES_CATEGORIA[cat] }}></span>
-                                                <span className="text-slate-300 font-medium group-hover:text-white underline-offset-4 group-hover:underline">{cat}</span>
+                                                <span className="text-slate-300 font-medium group-hover:text-white underline-offset-4 group-hover:underline">{emojiCategoria(cat)} {cat}</span>
                                             </div>
                                             <span className="font-bold text-white cursor-pointer" onClick={() => setSelectedCategoryModal(cat)}>{amount.toFixed(2)}€</span>
                                         </div>
@@ -1355,32 +2417,69 @@
                     <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Movimientos Móvil</h3>
                         <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                            {data.expenses.length === 0 && <p className="text-slate-400 text-xs text-center py-4">Sin gastos registrados en el móvil.</p>}
-                            {data.expenses.map((exp, idx) => (
-                                <div key={exp.id} className={`expense-enter p-3 rounded-xl bg-black/40 border border-white/5 text-xs ${idx === 0 ? 'border-indigo-500/30' : ''}`} style={{ animationDelay: `${idx * 0.05}s` }}>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-bold text-white">{exp.name}</p>
-                                                <span className="text-[11px] px-1.5 py-0.5 rounded font-extrabold bg-indigo-500/20 text-indigo-300">
-                                                    {exp.category || 'Otros'}
-                                                </span>
-                                                <span className={`text-[11px] px-1.5 py-0.5 rounded font-extrabold ${exp.tipoGasto === 'Común' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
-                                                    {exp.tipoGasto || 'Individual'}
-                                                </span>
+                            {activeExpenses.length === 0 && <p className="text-slate-400 text-xs text-center py-4">Sin gastos registrados en el móvil.</p>}
+                            {visibleExpenses.map((exp, idx) => {
+                                const isSwiping = swipeState.id === exp.id;
+                                const swipeDx = isSwiping ? swipeState.dx : 0;
+                                return (
+                                <div key={exp.id} className="relative overflow-hidden rounded-xl">
+                                    {/* FASE 9 — Fondo de acción del swipe: pincel indigo (editar) a la
+                                        izquierda si arrastras hacia la derecha, rosa (borrar) a la derecha
+                                        si arrastras hacia la izquierda. Solo visible mientras se arrastra. */}
+                                    <div
+                                        className="absolute inset-0 flex items-center justify-between px-5 rounded-xl pointer-events-none"
+                                        style={{ background: isSwiping && swipeDx > 8 ? 'rgba(99,102,241,0.22)' : isSwiping && swipeDx < -8 ? 'rgba(244,63,94,0.22)' : 'transparent' }}
+                                    >
+                                        <i className={`fa-solid fa-pen text-indigo-300 text-sm transition-opacity ${isSwiping && swipeDx > 24 ? 'opacity-100' : 'opacity-0'}`}></i>
+                                        <i className={`fa-solid fa-trash text-rose-300 text-sm transition-opacity ${isSwiping && swipeDx < -24 ? 'opacity-100' : 'opacity-0'}`}></i>
+                                    </div>
+                                    <div
+                                        className={`expense-enter p-3 rounded-xl bg-black/40 border border-white/5 text-xs relative ${idx === 0 ? 'border-indigo-500/30' : ''}`}
+                                        style={{
+                                            animationDelay: `${idx * 0.05}s`,
+                                            touchAction: 'pan-y',
+                                            transform: `translateX(${swipeDx}px)`,
+                                            transition: isSwiping ? 'none' : 'transform 0.2s ease'
+                                        }}
+                                        onTouchStart={(e) => handleExpenseTouchStart(exp, e)}
+                                        onTouchMove={(e) => handleExpenseTouchMove(exp, e)}
+                                        onTouchEnd={() => handleExpenseTouchEnd(exp)}
+                                        onTouchCancel={handleExpenseTouchCancel}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-white">{exp.name}</p>
+                                                    <span className="text-[11px] px-1.5 py-0.5 rounded font-extrabold bg-indigo-500/20 text-indigo-300">
+                                                        {emojiCategoria(exp.category)} {exp.category || 'Otros'}
+                                                    </span>
+                                                    <span className={`text-[11px] px-1.5 py-0.5 rounded font-extrabold ${exp.tipoGasto === 'Común' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                                                        {exp.tipoGasto || 'Individual'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[12px] text-slate-400 mt-0.5">{formatFechaAmigable(exp.fecha)} · {data.banco}</p>
                                             </div>
-                                            <p className="text-[12px] text-slate-400 mt-0.5">{formatFechaAmigable(exp.fecha)} · {data.banco}</p>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-black text-rose-400">-{parseFloat(exp.amount).toFixed(2)}€</span>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => handleOpenEdit(exp)} className="text-slate-400 hover:text-indigo-400 p-1"><i className="fa-solid fa-pen text-xs"></i></button>
-                                                <button onClick={() => handleDelete(exp.id)} className="text-slate-400 hover:text-rose-400 p-1"><i className="fa-solid fa-trash text-xs"></i></button>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-black text-rose-400">-{parseFloat(exp.amount).toFixed(2)}€</span>
+                                                <div className="flex gap-1">
+                                                    <button onClick={() => handleShareExpense(exp)} className="text-slate-400 hover:text-emerald-400 p-1" title="Compartir gasto"><i className="fa-solid fa-share-nodes text-xs"></i></button>
+                                                    <button onClick={() => handleOpenEdit(exp)} className="text-slate-400 hover:text-indigo-400 p-1"><i className="fa-solid fa-pen text-xs"></i></button>
+                                                    <button onClick={() => handleDelete(exp.id)} className="text-slate-400 hover:text-rose-400 p-1"><i className="fa-solid fa-trash text-xs"></i></button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
+                            {activeExpenses.length > visibleExpensesCount && (
+                                <button
+                                    onClick={() => setVisibleExpensesCount(prev => prev + 50)}
+                                    className="w-full py-2.5 text-[11px] font-black uppercase tracking-widest text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl transition-colors"
+                                >
+                                    Cargar más ({activeExpenses.length - visibleExpensesCount} restantes)
+                                </button>
+                            )}
                         </div>
                     </div>
                     </div>
@@ -1394,12 +2493,238 @@
                     </div>
 
                     <button
+                        onClick={() => setShowSettings(true)}
+                        className="fixed bottom-6 right-[88px] z-40 w-14 h-14 rounded-full bg-slate-700 hover:bg-slate-600 text-white shadow-2xl flex items-center justify-center transition-colors"
+                        title="Ajustes"
+                    >
+                        <i className="fa-solid fa-sliders text-xl"></i>
+                    </button>
+
+                    <button
                         onClick={() => setShowGuide(true)}
                         className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-2xl flex items-center justify-center transition-colors"
                         title="Guía de usuario"
                     >
                         <i className="fa-solid fa-circle-question text-xl"></i>
                     </button>
+
+                    {showSettings && ReactDOM.createPortal(
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                            <div className="bg-[#0f111a] border border-white/10 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade max-h-[85vh] flex flex-col overflow-hidden">
+                                <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10 shrink-0">
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                        <i className="fa-solid fa-sliders text-indigo-400"></i> Ajustes
+                                    </h3>
+                                    <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-white transition-colors p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
+                                </div>
+                                <div className="p-6 space-y-5 overflow-y-auto">
+                                    <div>
+                                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3">Feedback háptico y sonoro</p>
+
+                                        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <div className="flex items-center gap-3">
+                                                <i className="fa-solid fa-mobile-screen-button text-indigo-400 w-5 text-center"></i>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white">Vibración</p>
+                                                    <p className="text-[11px] text-slate-400">Al guardar, eliminar o si hay un error</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => updateFeedbackSettings({ vibrationEnabled: !feedbackSettings.vibrationEnabled })}
+                                                className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors flex-shrink-0 ${feedbackSettings.vibrationEnabled ? 'bg-indigo-600 justify-end' : 'bg-white/10 justify-start'}`}
+                                            >
+                                                <span className="w-5 h-5 bg-white rounded-full shadow"></span>
+                                            </button>
+                                        </div>
+
+                                        {feedbackSettings.vibrationEnabled && (
+                                            <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                                <p className="text-sm font-bold text-white mb-2.5">Intensidad de vibración</p>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {[
+                                                        { id: 'baja', label: 'Baja' },
+                                                        { id: 'media', label: 'Media' },
+                                                        { id: 'alta', label: 'Alta' }
+                                                    ].map(opt => (
+                                                        <button
+                                                            key={opt.id}
+                                                            onClick={() => updateFeedbackSettings({ vibrationIntensity: opt.id })}
+                                                            className={`py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${feedbackSettings.vibrationIntensity === opt.id ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <div className="flex items-center gap-3">
+                                                <i className="fa-solid fa-volume-high text-indigo-400 w-5 text-center"></i>
+                                                <div>
+                                                    <p className="text-sm font-bold text-white">Sonidos</p>
+                                                    <p className="text-[11px] text-slate-400">Tonos cortos para confirmar acciones</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => updateFeedbackSettings({ soundEnabled: !feedbackSettings.soundEnabled })}
+                                                className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors flex-shrink-0 ${feedbackSettings.soundEnabled ? 'bg-indigo-600 justify-end' : 'bg-white/10 justify-start'}`}
+                                            >
+                                                <span className="w-5 h-5 bg-white rounded-full shadow"></span>
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            onClick={() => triggerFeedback('success')}
+                                            className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                        >
+                                            🔔 Probar feedback
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3">Copias de seguridad</p>
+
+                                        <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                                                Cada domingo a las 23:59 (con la app abierta) se guarda automáticamente un backup completo en <span className="text-white font-semibold">Descargas</span>. Aquí abajo tienes un registro de los 5 últimos.
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={handleManualBackup}
+                                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 mb-2.5"
+                                        >
+                                            <i className="fa-solid fa-shield-halved"></i> Hacer backup ahora
+                                        </button>
+
+                                        {backupHistory.length === 0 ? (
+                                            <p className="text-[11px] text-slate-500 text-center py-2">Todavía no hay ninguna copia registrada.</p>
+                                        ) : (
+                                            <div className="space-y-1.5">
+                                                {backupHistory.map((b, i) => (
+                                                    <div key={b.fecha + i} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <i className={`fa-solid ${b.manual ? 'fa-hand' : 'fa-clock-rotate-left'} text-[11px] text-indigo-400 flex-shrink-0`}></i>
+                                                            <span className="text-[11px] text-slate-300 truncate">{new Date(b.fecha).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
+                                                        <span className="text-[10px] text-slate-500 uppercase tracking-wider flex-shrink-0">{b.manual ? 'Manual' : 'Auto'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3">Notificaciones</p>
+
+                                        {notifPermission !== 'granted' && (
+                                            <button
+                                                onClick={requestNotifPermission}
+                                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 mb-2.5"
+                                            >
+                                                <i className="fa-solid fa-bell"></i>
+                                                {notifPermission === 'denied' ? 'Notificaciones bloqueadas por el sistema' : 'Activar notificaciones'}
+                                            </button>
+                                        )}
+
+                                        <p className="text-[11px] text-slate-500 leading-relaxed mb-2.5">
+                                            Estas comprobaciones se hacen mientras la app está abierta (igual que el backup semanal) — un navegador no puede despertar la app cerrada a una hora exacta sin conexión a un servidor.
+                                        </p>
+
+                                        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <i className="fa-solid fa-clock text-indigo-400 w-5 text-center"></i>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-white">Recordatorio diario</p>
+                                                    <p className="text-[11px] text-slate-400">¿Has apuntado todos los gastos de hoy?</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => updateNotifSettings({ dailyReminderEnabled: !notifSettings.dailyReminderEnabled })}
+                                                className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors flex-shrink-0 ${notifSettings.dailyReminderEnabled ? 'bg-indigo-600 justify-end' : 'bg-white/10 justify-start'}`}
+                                            >
+                                                <span className="w-5 h-5 bg-white rounded-full shadow"></span>
+                                            </button>
+                                        </div>
+
+                                        {notifSettings.dailyReminderEnabled && (
+                                            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                                <p className="text-sm font-bold text-white">Hora del recordatorio</p>
+                                                <input
+                                                    type="time"
+                                                    value={notifSettings.dailyReminderTime}
+                                                    onChange={(e) => updateNotifSettings({ dailyReminderTime: e.target.value })}
+                                                    className="bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white"
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <i className="fa-solid fa-chart-pie text-indigo-400 w-5 text-center"></i>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-white">Alerta de presupuesto</p>
+                                                    <p className="text-[11px] text-slate-400">Al superar el 80% de la semana</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => updateNotifSettings({ budgetAlertEnabled: !notifSettings.budgetAlertEnabled })}
+                                                className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors flex-shrink-0 ${notifSettings.budgetAlertEnabled ? 'bg-indigo-600 justify-end' : 'bg-white/10 justify-start'}`}
+                                            >
+                                                <span className="w-5 h-5 bg-white rounded-full shadow"></span>
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <i className="fa-solid fa-hourglass-end text-indigo-400 w-5 text-center"></i>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-white">Alerta de fin de ciclo</p>
+                                                    <p className="text-[11px] text-slate-400">Cuando queden 3 días o menos</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => updateNotifSettings({ cycleEndAlertEnabled: !notifSettings.cycleEndAlertEnabled })}
+                                                className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors flex-shrink-0 ${notifSettings.cycleEndAlertEnabled ? 'bg-indigo-600 justify-end' : 'bg-white/10 justify-start'}`}
+                                            >
+                                                <span className="w-5 h-5 bg-white rounded-full shadow"></span>
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3.5 mb-2.5">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <i className="fa-solid fa-eye-slash text-indigo-400 w-5 text-center"></i>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-white">Recordatorio de inactividad</p>
+                                                    <p className="text-[11px] text-slate-400">3 días sin registrar ningún gasto</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => updateNotifSettings({ inactivityAlertEnabled: !notifSettings.inactivityAlertEnabled })}
+                                                className={`w-12 h-7 rounded-full flex items-center px-1 transition-colors flex-shrink-0 ${notifSettings.inactivityAlertEnabled ? 'bg-indigo-600 justify-end' : 'bg-white/10 justify-start'}`}
+                                            >
+                                                <span className="w-5 h-5 bg-white rounded-full shadow"></span>
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            onClick={() => showAppNotification('🔔 Notificación de prueba', 'Así se verán tus avisos.')}
+                                            className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                        >
+                                            🔔 Probar notificación
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-6 pt-2 shrink-0">
+                                    <button onClick={() => setShowSettings(false)} className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs transition-all">
+                                        CERRAR
+                                    </button>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
 
                     {showCreator && ReactDOM.createPortal(
                         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
@@ -1471,13 +2796,120 @@
                         document.body
                     )}
 
+                    {showSyncModal && ReactDOM.createPortal(
+                        <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+                            <div className="bg-[#0f111a] border border-white/10 p-6 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade space-y-4">
+                                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                                        <i className="fa-solid fa-wifi text-sky-400"></i> Sincronizar con El Hilván
+                                    </h3>
+                                    <button onClick={handleCancelSync} className="text-slate-400 p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
+                                </div>
+
+                                <p className="text-[12px] text-slate-400 leading-relaxed">
+                                    Abre El Hilván en tu PC y mira la IP, el puerto y el PIN de 4 dígitos que muestra en pantalla.
+                                </p>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">IP del PC</label>
+                                        <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            placeholder="192.168.1.35"
+                                            value={syncForm.ip}
+                                            onChange={(e) => setSyncForm(prev => ({ ...prev, ip: e.target.value }))}
+                                            disabled={syncStatus === 'connecting' || syncStatus === 'syncing'}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-sky-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Puerto</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                placeholder="8080"
+                                                value={syncForm.port}
+                                                onChange={(e) => setSyncForm(prev => ({ ...prev, port: e.target.value }))}
+                                                disabled={syncStatus === 'connecting' || syncStatus === 'syncing'}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-sky-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">PIN (4 dígitos)</label>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={4}
+                                                placeholder="1234"
+                                                value={syncForm.pin}
+                                                onChange={(e) => setSyncForm(prev => ({ ...prev, pin: e.target.value.replace(/\D/g, '').slice(0,4) }))}
+                                                disabled={syncStatus === 'connecting' || syncStatus === 'syncing'}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white text-sm text-center tracking-[0.4em] font-black focus:border-sky-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {syncStatus !== 'idle' && (
+                                    <div className={`text-[12px] font-bold rounded-xl p-3 flex items-center gap-2 ${
+                                        syncStatus === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                        (syncStatus === 'error' || syncStatus === 'auth_fail') ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                                        'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                                    }`}>
+                                        {(syncStatus === 'connecting' || syncStatus === 'syncing') && <i className="fa-solid fa-circle-notch fa-spin"></i>}
+                                        {syncStatus === 'success' && <i className="fa-solid fa-circle-check"></i>}
+                                        {(syncStatus === 'error' || syncStatus === 'auth_fail') && <i className="fa-solid fa-triangle-exclamation"></i>}
+                                        <span>{syncMessage}</span>
+                                    </div>
+                                )}
+
+                                {/* FASE 7 (revisión) — Historial de sincronizaciones, pedido por la hoja
+                                    de ruta y que faltaba por implementar. Solo se muestra en reposo, para
+                                    no estorbar mientras hay una sincronización en curso. */}
+                                {syncStatus === 'idle' && syncHistory.length > 0 && (
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Últimas sincronizaciones</p>
+                                        <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pr-1">
+                                            {syncHistory.slice(0, 5).map((s, i) => (
+                                                <div key={s.fecha + i} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px]">
+                                                    <span className="text-slate-300">{new Date(s.fecha).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="text-slate-500">
+                                                        {s.nuevos > 0 || s.actualizados > 0
+                                                            ? [s.nuevos > 0 ? `+${s.nuevos}` : null, s.actualizados > 0 ? `${s.actualizados} act.` : null].filter(Boolean).join(' · ')
+                                                            : 'Sin cambios'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-1">
+                                    <button onClick={handleCancelSync} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-bold text-xs transition-all">
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleStartSync}
+                                        disabled={syncStatus === 'connecting' || syncStatus === 'syncing'}
+                                        className="flex-1 py-3 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {(syncStatus === 'connecting' || syncStatus === 'syncing') ? 'Sincronizando...' : 'Sincronizar ahora'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
                     {selectedCategoryModal && ReactDOM.createPortal(
                         <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                             <div className="bg-[#0f111a] border border-white/10 p-6 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
                                 <div className="flex justify-between items-center border-b border-white/10 pb-3">
                                     <div className="flex items-center gap-2">
                                         <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: COLORES_CATEGORIA[selectedCategoryModal] }}></span>
-                                        <h3 className="text-base font-black text-white">{selectedCategoryModal}</h3>
+                                        <h3 className="text-base font-black text-white">{emojiCategoria(selectedCategoryModal)} {selectedCategoryModal}</h3>
                                     </div>
                                     <button onClick={() => setSelectedCategoryModal(null)} className="text-slate-400 p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
                                 </div>
@@ -1537,7 +2969,7 @@
                                     <h3 className="text-base font-black text-white">{editingId ? 'Editar Gasto' : 'Añadir Gasto Rápido'}</h3>
                                     <button onClick={handleCloseModal} className="text-slate-400 hover:text-white transition-colors p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
                                 </div>
-                                <form onSubmit={handleSaveExpense} className="space-y-3">
+                                <form onSubmit={handleSaveExpense} className="space-y-3" noValidate>
                                     <div>
                                         <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Concepto</label>
                                         <div className="flex gap-2 items-center">
@@ -1546,10 +2978,19 @@
                                                 type="text" 
                                                 value={formData.name} 
                                                 onChange={e => setFormData({...formData, name: e.target.value})} 
-                                                className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500" 
+                                                onBlur={() => setShowFieldErrors(true)}
+                                                className={`flex-1 bg-white/5 border rounded-xl p-3 text-white text-sm focus:outline-none ${showFieldErrors && formErrors.name ? 'border-rose-500 focus:border-rose-500' : 'border-white/10 focus:border-indigo-500'}`} 
                                                 placeholder="Ej: Gasolina, café..." 
-                                                required 
+                                                list="concept-suggestions"
+                                                autoComplete="off"
                                             />
+                                            {/* FASE 2 — Autocompletado: sugerencias de los últimos conceptos usados,
+                                                ordenados por fecha de último uso (más reciente primero). */}
+                                            <datalist id="concept-suggestions">
+                                                {recentConcepts.map(c => (
+                                                    <option key={c.name} value={c.name} />
+                                                ))}
+                                            </datalist>
                                             <button 
                                                 type="button"
                                                 onClick={startVoiceRecognition}
@@ -1563,7 +3004,9 @@
                                                 )}
                                             </button>
                                         </div>
-                                        {!isOnline && (
+                                        {showFieldErrors && formErrors.name ? (
+                                            <p className="text-[11px] text-rose-400 mt-1">⚠️ {formErrors.name}</p>
+                                        ) : !isOnline && (
                                             <p className="text-[11px] text-amber-400 mt-1">📶 Sin conexión · La voz no está disponible</p>
                                         )}
                                     </div>
@@ -1576,16 +3019,19 @@
                                                 inputMode="decimal"
                                                 value={formData.amount} 
                                                 onChange={e => setFormData({...formData, amount: e.target.value})} 
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500" 
+                                                onBlur={() => setShowFieldErrors(true)}
+                                                className={`w-full bg-white/5 border rounded-xl p-3 text-white text-sm focus:outline-none ${showFieldErrors && formErrors.amount ? 'border-rose-500 focus:border-rose-500' : 'border-white/10 focus:border-indigo-500'}`} 
                                                 placeholder="0.00" 
-                                                required 
                                             />
+                                            {showFieldErrors && formErrors.amount && (
+                                                <p className="text-[11px] text-rose-400 mt-1">⚠️ {formErrors.amount}</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Categoría</label>
                                             <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm appearance-none">
                                                 {CATEGORIAS_GASTO.map(cat => (
-                                                    <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
+                                                    <option key={cat} value={cat} className="bg-slate-900">{emojiCategoria(cat)} {cat}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -1600,11 +3046,25 @@
                                         </div>
                                         <div>
                                             <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Fecha</label>
-                                            <input type="date" value={formData.fecha} onChange={e => setFormData({...formData, fecha: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-indigo-500" required />
+                                            <input 
+                                                type="date" 
+                                                value={formData.fecha} 
+                                                onChange={e => setFormData({...formData, fecha: e.target.value})} 
+                                                onBlur={() => setShowFieldErrors(true)}
+                                                max={new Date().toISOString().slice(0,10)}
+                                                className={`w-full bg-white/5 border rounded-xl p-3 text-white text-sm focus:outline-none ${showFieldErrors && formErrors.fecha ? 'border-rose-500 focus:border-rose-500' : 'border-white/10 focus:border-indigo-500'}`} 
+                                            />
+                                            {showFieldErrors && formErrors.fecha && (
+                                                <p className="text-[11px] text-rose-400 mt-1">⚠️ {formErrors.fecha}</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex gap-2 mt-2">
-                                        <button type="submit" className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-sm transition-all shadow-lg active:scale-95">
+                                        <button 
+                                            type="submit" 
+                                            disabled={showFieldErrors && !isExpenseFormValid(formErrors)}
+                                            className={`flex-1 py-3.5 rounded-xl font-black text-sm transition-all shadow-lg active:scale-95 ${showFieldErrors && !isExpenseFormValid(formErrors) ? 'bg-white/10 text-slate-500 cursor-not-allowed shadow-none active:scale-100' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
+                                        >
                                             {editingId ? 'ACTUALIZAR' : 'GUARDAR'}
                                         </button>
                                         <button type="button" onClick={handleCloseModal} className="py-3.5 px-4 bg-white/5 hover:bg-white/10 text-slate-400 rounded-xl font-bold text-sm transition-all active:scale-95">
@@ -1625,11 +3085,30 @@
     </script>
 
     <script>
-        if ('serviceWorker' in navigator) {
+        // El SW solo se registra si NO corremos dentro del WebView nativo de
+        // Capacitor (window.Capacitor lo inyecta el runtime nativo). Dentro de
+        // la app empaquetada los assets ya están embebidos y cachear con un SW
+        // solo arriesga a servir una versión vieja tras actualizar el APK/IPA.
+        if ('serviceWorker' in navigator && !window.Capacitor) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(() => {});
             });
         }
+
+        // Ajustes específicos cuando la app corre empaquetada con Capacitor.
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+                try {
+                    const { StatusBar } = window.Capacitor.Plugins;
+                    StatusBar && StatusBar.setBackgroundColor({ color: '#020205' });
+                    StatusBar && StatusBar.setStyle({ style: 'DARK' });
+                } catch (e) { /* plugin no disponible, se ignora */ }
+                try {
+                    const { SplashScreen } = window.Capacitor.Plugins;
+                    SplashScreen && SplashScreen.hide();
+                } catch (e) { /* plugin no disponible, se ignora */ }
+            }
+        });
     </script>
 </body>
 </html>
