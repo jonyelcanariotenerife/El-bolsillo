@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  updatePeriodMillis=1800000 (30 min) es prácticamente el mínimo real que
+  respeta Android aunque pongas un valor menor (el sistema lo agrupa/limita
+  por batería). Por eso el refresco "al instante" mientras la app está
+  abierta lo hace BolsilloWidgetPlugin.refresh(), no este intervalo.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="100dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_bolsillo"
+    android:previewLayout="@layout/widget_bolsillo"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />

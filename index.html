@@ -823,6 +823,10 @@
             const [isEditingRestante, setIsEditingRestante] = useState(false);
             const [tempRestante, setTempRestante] = useState('');
 
+            // Restaurar a estado de fábrica (desde el logo de la cabecera)
+            const [showFactoryResetModal, setShowFactoryResetModal] = useState(false);
+            const [confirmFactoryText, setConfirmFactoryText] = useState('');
+
             const [ultimaSyncCalc, setUltimaSyncCalc] = useState(() => calcSync.getUltima());
             const [sincronizandoConCalc, setSincronizandoConCalc] = useState(false);
             const [toast, setToast] = useState(null);
@@ -1366,6 +1370,56 @@
                 updateLastActivity();
             };
 
+            // Restaurar a estado de fábrica: borra TODO lo que la app guarda
+            // localmente (datos, historial, ajustes, caché de sync/widget) y
+            // deja la app tal cual queda recién instalada. Es la acción más
+            // destructiva de toda la app, así que exige escribir una palabra
+            // de confirmación (no basta con un clic) y descarga siempre un
+            // backup completo justo antes de borrar nada.
+            // Nota: WIDGET_DATA_KEY y CALC_SYNC_CACHE_KEY viven dentro del
+            // cierre de BolsilloServices (no son accesibles aquí), así que
+            // usamos su valor literal directamente para evitar depender de su
+            // ámbito.
+            const LOCALSTORAGE_KEYS_A_BORRAR = [
+                STORAGE_KEY, VOICE_GUIDE_SHOWN_KEY, LAST_ACTIVITY_KEY, LAST_WEEKLY_BACKUP_KEY,
+                CONCEPTS_KEY, PRE_RESET_SNAPSHOT_KEY, FEEDBACK_SETTINGS_KEY, BACKUP_HISTORY_KEY,
+                SYNC_HISTORY_KEY, NOTIF_SETTINGS_KEY, NOTIF_FIRED_KEY, 'bolsillo_widget_data', 'bolsillo_last_calc_sync'
+            ];
+
+            const confirmarRestaurarFabrica = async () => {
+                const hoy = new Date();
+                const fileName = `backup_antes_de_restaurar_fabrica_${hoy.toISOString().slice(0,10)}.json`;
+
+                const backupCompleto = {
+                    fechaBackup: hoy.toISOString(),
+                    motivo: 'Backup automático antes de restaurar a fábrica',
+                    data
+                };
+
+                const blob = new Blob([JSON.stringify(backupCompleto, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                LOCALSTORAGE_KEYS_A_BORRAR.forEach(key => {
+                    try { localStorage.removeItem(key); } catch (e) { /* no-op */ }
+                });
+
+                if (isNativePlatform()) {
+                    try {
+                        const plugins = window.Capacitor.Plugins || {};
+                        if (plugins.Preferences) await plugins.Preferences.remove({ key: 'bolsillo_widget_data' });
+                    } catch (e) { /* no-op */ }
+                }
+
+                setShowFactoryResetModal(false);
+                window.location.reload();
+            };
+
+
             const startVoiceRecognition = () => {
                 if (!isOnline) {
                     setToast('⚠️ Sin conexión a internet');
@@ -1676,7 +1730,7 @@
 
             const SWIPE_GLOBAL_THRESHOLD = 70;
             const mainTouchRef = useRef(null);
-            const anyModalOpen = modalOpen || showSettings || showSyncModal || showCreator || showGuide || !!selectedCategoryModal || showResetModal || showReajusteRealModal;
+            const anyModalOpen = modalOpen || showSettings || showSyncModal || showCreator || showGuide || !!selectedCategoryModal || showResetModal || showReajusteRealModal || showFactoryResetModal;
 
             const handleMainTouchStart = (e) => {
                 if (anyModalOpen || expenseTouchRef.current) return;
@@ -2332,7 +2386,14 @@
                     )}
 
                     <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-md gap-2">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <button
+                                onClick={() => { setConfirmFactoryText(''); setShowFactoryResetModal(true); }}
+                                title="Restaurar la app a estado de fábrica"
+                                className="w-11 h-11 rounded-2xl overflow-hidden border border-white/10 bg-black shrink-0 active:scale-90 transition-transform"
+                            >
+                                <img src="./assets/logo-mi-bolsillo.gif" alt="Mi Bolsillo" className="w-full h-full object-cover" />
+                            </button>
                             <div>
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <h1 className="text-lg font-black text-white tracking-tight">Mi Bolsillo</h1>
@@ -2353,6 +2414,7 @@
                                 </p>
                             </div>
                         </div>
+
                         <div className="flex items-center gap-2 flex-wrap justify-end">
                             <button onClick={() => setShowSyncModal(true)} title="Sincronizar por WiFi con El Hilván" className="bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-transform flex items-center gap-1.5">
                                 <i className="fa-solid fa-wifi"></i>
@@ -3123,6 +3185,55 @@
                                     </button>
                                     <button onClick={confirmarReajusteReal} className="flex-1 bg-amber-600 text-white py-2.5 rounded-xl font-bold text-sm active:scale-[0.98] transition-transform">
                                         Repartir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {showFactoryResetModal && ReactDOM.createPortal(
+                        <div className="modal-overlay bg-black/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+                            <div className="bg-[#0f111a] border border-rose-500/30 p-6 rounded-[2rem] w-full max-w-sm shadow-2xl animate-fade space-y-4">
+                                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                                        <i className="fa-solid fa-triangle-exclamation text-rose-400"></i> Restaurar a fábrica
+                                    </h3>
+                                    <button onClick={() => setShowFactoryResetModal(false)} className="text-slate-400 p-1"><i className="fa-solid fa-xmark text-lg"></i></button>
+                                </div>
+
+                                <p className="text-[12px] text-slate-400 leading-relaxed">
+                                    Esto borra <span className="text-white font-bold">todo</span> lo que la app guarda en este móvil: gastos, ciclos, historial de reajustes, ajustes de notificaciones y cachés de sincronización. La app queda exactamente como recién instalada. Antes de borrar nada, se descarga automáticamente un backup completo por si necesitas recuperar algo.
+                                </p>
+
+                                <p className="text-[12px] text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 font-bold">
+                                    Esta acción no se puede deshacer desde dentro de la app.
+                                </p>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                                        Escribe BORRAR para confirmar
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={confirmFactoryText}
+                                        onChange={e => setConfirmFactoryText(e.target.value)}
+                                        placeholder="BORRAR"
+                                        autoFocus
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white text-sm focus:border-rose-500 focus:outline-none uppercase"
+                                    />
+                                </div>
+
+                                <div className="flex gap-2 pt-1">
+                                    <button onClick={() => setShowFactoryResetModal(false)} className="flex-1 bg-white/5 border border-white/10 text-slate-300 py-2.5 rounded-xl font-bold text-sm active:scale-[0.98] transition-transform">
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={confirmarRestaurarFabrica}
+                                        disabled={confirmFactoryText.trim().toUpperCase() !== 'BORRAR'}
+                                        className="flex-1 bg-rose-600 disabled:bg-rose-600/30 disabled:cursor-not-allowed text-white py-2.5 rounded-xl font-bold text-sm active:scale-[0.98] transition-transform"
+                                    >
+                                        Restaurar a fábrica
                                     </button>
                                 </div>
                             </div>

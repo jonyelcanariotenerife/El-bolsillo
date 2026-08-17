@@ -1,0 +1,19 @@
+// ESTE ARCHIVO ES UNA REFERENCIA, NO LO COPIES ENCIMA DEL TUYO A CIEGAS.
+// Tu MainActivity.java real está en:
+//   android/app/src/main/java/com/quantumfinance/bolsillo/MainActivity.java
+// Solo tienes que añadirle el override de onCreate() con registerPlugin(...),
+// como se muestra aquí. Si ya tienes otros plugins personalizados registrados,
+// añade la línea de BolsilloWidgetPlugin junto a los que ya tengas.
+
+package com.quantumfinance.bolsillo;
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(BolsilloWidgetPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
